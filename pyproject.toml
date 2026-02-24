@@ -36,6 +36,9 @@ packages = ["src/devstart"]
 testpaths = ["tests"]
 pythonpath = ["src"]
 
+[tool.coverage.run]
+data_file = ".pytest_cache/.coverage"
+
 [tool.ruff]
 target-version = "py314"
 line-length = 88

@@ -20,6 +20,9 @@ packages = ["src/{{ project_name }}"]
 testpaths = ["tests"]
 pythonpath = ["src"]
 
+[tool.coverage.run]
+data_file = ".pytest_cache/.coverage"
+
 [tool.ruff]
 target-version = "py{{ python_version | replace('.', '') }}"
 line-length = 88
