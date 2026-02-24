@@ -1,0 +1,44 @@
+@startuml class_diagram
+!theme blueprint
+
+package "{{ project_name }}" {
+    abstract class BaseService {
+        # name : str
+        # started : bool
+        +start() : None
+        +stop() : None
+        +{abstract} run() : None
+    }
+
+    interface Repository {
+        +get(id: str) : dict
+        +save(item: dict) : None
+        +delete(id: str) : None
+    }
+
+    class AppService {
+        -repo : Repository
+        +run() : None
+        +process(data: dict) : dict
+    }
+
+    class InMemoryRepository {
+        -storage : dict
+        +get(id: str) : dict
+        +save(item: dict) : None
+        +delete(id: str) : None
+    }
+
+    class Config {
+        +debug : bool
+        +version : str
+        +{static} from_env() : Config
+    }
+
+    BaseService <|-- AppService
+    Repository <|.. InMemoryRepository
+    AppService *-- Repository
+    AppService ..> Config : uses
+}
+
+@enduml

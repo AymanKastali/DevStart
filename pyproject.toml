@@ -1,0 +1,68 @@
+[project]
+name = "devstart"
+dynamic = ["version"]
+description = "CLI tool that scaffolds Python projects with dev tooling pre-configured"
+readme = "README.md"
+license = "MIT"
+authors = [{ name = "ayman kastali", email = "aymankastali.backend@gmail.com" }]
+requires-python = ">=3.14"
+dependencies = ["typer>=0.9.0", "rich>=13.0.0", "jinja2>=3.1.0"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Software Development :: Code Generators",
+    "Typing :: Typed",
+]
+
+[project.scripts]
+devstart = "devstart.cli.main:app"
+
+[project.urls]
+Homepage = "https://github.com/AymanKastali/DevStart"
+Repository = "https://github.com/AymanKastali/DevStart"
+Issues = "https://github.com/AymanKastali/DevStart/issues"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+path = "src/devstart/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/devstart"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+target-version = "py314"
+line-length = 88
+src = ["src"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "A", "SIM", "TC"]
+
+[dependency-groups]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "ruff>=0.4.0",
+    "bandit[toml]>=1.7.0",
+    "pre-commit>=3.7.0",
+    "mypy>=1.10.0",
+    "codespell>=2.3.0",
+]
+
+[tool.mypy]
+python_version = "3.14"
+strict = true
+exclude = ["tests"]
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+
+[tool.bandit]
+exclude_dirs = ["tests"]

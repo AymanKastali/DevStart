@@ -1,0 +1,36 @@
+{
+  "name": "{{ project_name }}",
+  "image": "mcr.microsoft.com/devcontainers/python:{{ python_version }}",
+  "remoteUser": "vscode",
+  "updateRemoteUserUID": true,
+  "containerEnv": {
+    "UV_LINK_MODE": "copy"
+  },
+{%- if docker %}
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "moby": false
+    }
+  },
+{%- endif %}
+  "postCreateCommand": "make setup",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.debugpy",
+        "charliermarsh.ruff",
+        "streetsidesoftware.code-spell-checker",
+        "ms-python.mypy-type-checker",
+        "mhutchie.git-graph",
+        "eamodio.gitlens",
+        "tamasfe.even-better-toml",
+        "usernamehw.errorlens"{% if docker %},
+        "ms-azuretools.vscode-docker"
+{%- endif %}{% if diagrams %},
+        "jebbs.plantuml"
+{%- endif %}
+      ]
+    }
+  }
+}

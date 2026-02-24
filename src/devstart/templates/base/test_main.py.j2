@@ -1,0 +1,19 @@
+"""Tests for {{ project_name }}.main."""
+
+from __future__ import annotations
+
+import logging
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import pytest
+
+from {{ project_name }}.main import main
+
+
+def test_main(caplog: pytest.LogCaptureFixture) -> None:
+    """Test that main() logs the expected greeting."""
+    with caplog.at_level(logging.INFO):
+        main()
+    assert "{{ project_name }}" in caplog.text
+    assert "is running" in caplog.text

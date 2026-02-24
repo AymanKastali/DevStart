@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["{{ python_version }}"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Set up Python {% raw %}${{ matrix.python-version }}{% endraw %}
+        run: uv python install {% raw %}${{ matrix.python-version }}{% endraw %}
+
+{%- if precommit %}
+
+      - name: Run pre-commit checks
+        uses: pre-commit/action@v3.0.1
+{%- else %}
+
+      - name: Lint with ruff
+        run: uv run ruff check .
+
+      - name: Check formatting
+        run: uv run ruff format --check .
+
+      - name: Spell check with codespell
+        run: uv run codespell --skip "*.lock"
+
+      - name: Secret detection with gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: {% raw %}${{ secrets.GITHUB_TOKEN }}{% endraw %}
+
+      - name: Type check with mypy
+        run: uv run mypy .
+
+      - name: Run tests
+        run: uv run pytest --cov=src/{{ project_name }} --cov-report=term-missing
+{%- endif %}

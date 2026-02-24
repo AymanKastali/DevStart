@@ -1,0 +1,59 @@
+.DEFAULT_GOAL := help
+
+.PHONY: help ensure-uv setup sync lint format format-check type-check test test-cov check clean{% if diagrams %} diagrams diagrams-svg diagrams-clean{% endif %}
+
+help: ## Show this help message
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
+		awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
+
+ensure-uv: ## Install uv if not present
+	@command -v uv >/dev/null 2>&1 || curl -LsSf https://astral.sh/uv/install.sh | sh
+
+setup: ensure-uv sync ## Set up the full dev environment
+{%- if precommit %}
+	@if command -v git >/dev/null 2>&1; then \
+		git rev-parse --git-dir >/dev/null 2>&1 || git init -b main; \
+		uv run pre-commit install; \
+	else \
+		echo "Warning: git not found, skipping pre-commit install"; \
+	fi
+{%- endif %}
+
+sync: ## Sync all dependencies
+	uv sync --all-groups
+
+lint: ## Run ruff linter
+	uv run ruff check .
+
+format: ## Auto-format code with ruff
+	uv run ruff format .
+
+format-check: ## Check code formatting without modifying
+	uv run ruff format --check .
+
+type-check: ## Run mypy type checker
+	uv run mypy .
+
+test: ## Run tests
+	uv run pytest
+
+test-cov: ## Run tests with coverage report
+	uv run pytest --cov=src/{{ project_name }} --cov-report=term-missing
+
+check: lint format-check type-check test ## Run all checks (lint + format + types + tests)
+
+clean: ## Remove build artifacts and caches
+	rm -rf dist/ build/ .venv/ .ruff_cache/ .pytest_cache/ .mypy_cache/
+	find . -type d -name __pycache__ -exec rm -rf {} +
+	find . -type f -name "*.pyc" -delete
+{%- if diagrams %}
+
+diagrams: ## Render PlantUML diagrams to PNG
+	plantuml -tpng docs/diagrams/*.puml
+
+diagrams-svg: ## Render PlantUML diagrams to SVG
+	plantuml -tsvg docs/diagrams/*.puml
+
+diagrams-clean: ## Remove rendered diagram images
+	rm -f docs/diagrams/*.png docs/diagrams/*.svg
+{%- endif %}
