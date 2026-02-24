@@ -20,3 +20,5 @@ jobs:
 
       - name: Run pre-commit checks
         uses: pre-commit/action@v3.0.1
+        env:
+          SKIP: no-commit-to-branch
