@@ -1,0 +1,25 @@
+FROM python:{{ python_version }}-slim
+
+WORKDIR /app
+
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+# Copy dependency files
+COPY pyproject.toml uv.lock ./
+
+# Install dependencies
+RUN uv sync --frozen --no-dev --no-install-project
+
+# Copy source code
+COPY README.md ./
+COPY src/ src/
+
+# Install the project
+RUN uv sync --frozen --no-dev
+
+# Run as non-root user
+RUN useradd --create-home appuser
+USER appuser
+
+CMD ["uv", "run", "--no-sync", "python", "-m", "{{ project_name }}"]

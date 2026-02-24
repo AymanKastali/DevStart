@@ -1,0 +1,31 @@
+"""Main entry point for {{ project_name }}."""
+
+import logging
+
+from rich.logging import RichHandler
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(message)s",
+    datefmt="[%X]",
+    handlers=[
+        RichHandler(
+            rich_tracebacks=True,
+            tracebacks_show_locals=True,
+            show_time=True,
+            show_path=True,
+            markup=True,
+        ),
+    ],
+)
+logger = logging.getLogger("{{ project_name }}")
+
+
+def main() -> None:
+    """Run the application."""
+    logger.info("[bold green]{{ project_name }}[/bold green] is running")
+    logger.debug("Debug mode is active")
+
+
+if __name__ == "__main__":
+    main()
