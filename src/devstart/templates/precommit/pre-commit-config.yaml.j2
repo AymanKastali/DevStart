@@ -13,6 +13,8 @@ repos:
       - id: check-added-large-files
       - id: debug-statements
       - id: detect-private-key
+      - id: no-commit-to-branch
+        args: [--branch, main]
 
   # ── Linting & formatting ─────────────────────────────────────────
   - repo: https://github.com/astral-sh/ruff-pre-commit
