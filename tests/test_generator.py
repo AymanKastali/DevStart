@@ -42,6 +42,9 @@ class TestDirectoryStructure:
         assert (root / ".vscode" / "launch.json").is_file()
         assert (root / ".vscode" / "settings.json").is_file()
 
+        # Continue
+        assert (root / ".continue" / "config.yaml").is_file()
+
         # Diagrams
         assert (root / "docs" / "diagrams" / "class_diagram.puml").is_file()
 
@@ -64,6 +67,7 @@ class TestDirectoryStructure:
         assert not (root / "docker").exists()
         assert not (root / ".dockerignore").exists()
         assert not (root / "docs").exists()
+        assert not (root / ".continue").exists()
 
 
 class TestConditionalGeneration:
@@ -144,6 +148,21 @@ class TestConditionalGeneration:
         generate_project(minimal_config)
         root = tmp_project_dir / "testproject"
         assert not (root / "docs").exists()
+
+    def test_continue_generated_when_enabled(
+        self, tmp_project_dir: Path, minimal_config: dict[str, Any]
+    ):
+        minimal_config["continue"] = True
+        generate_project(minimal_config)
+        root = tmp_project_dir / "testproject"
+        assert (root / ".continue" / "config.yaml").is_file()
+
+    def test_continue_skipped_when_disabled(
+        self, tmp_project_dir: Path, minimal_config: dict[str, Any]
+    ):
+        generate_project(minimal_config)
+        root = tmp_project_dir / "testproject"
+        assert not (root / ".continue").exists()
 
 
 class TestTemplateRendering:
@@ -498,9 +517,30 @@ class TestGeneratedFileContent:
             "eamodio.gitlens",
             "tamasfe.even-better-toml",
             "usernamehw.errorlens",
+            "continue.continue",
         ]
         for ext in expected_extensions:
             assert ext in content, f"Missing extension: {ext}"
+
+    def test_devcontainer_run_args(
+        self, tmp_project_dir: Path, full_config: dict[str, Any]
+    ):
+        generate_project(full_config)
+        root = tmp_project_dir / "testproject"
+        content = (root / ".devcontainer" / "devcontainer.json").read_text()
+        assert "host.docker.internal:host-gateway" in content
+
+    def test_continue_config_content(
+        self, tmp_project_dir: Path, full_config: dict[str, Any]
+    ):
+        generate_project(full_config)
+        root = tmp_project_dir / "testproject"
+        content = (root / ".continue" / "config.yaml").read_text()
+        assert "qwen2.5-coder:7b" in content
+        assert "qwen2.5-coder:1.5b" in content
+        assert "nomic-embed-text" in content
+        assert "provider: ollama" in content
+        assert "provider: codebase" in content
 
     def test_devcontainer_docker_in_docker_when_docker_enabled(
         self, tmp_project_dir: Path, full_config: dict[str, Any]
@@ -567,6 +607,23 @@ class TestGeneratedFileContent:
         root = tmp_project_dir / "testproject"
         content = (root / ".devcontainer" / "devcontainer.json").read_text()
         assert "jebbs.plantuml" not in content
+
+    def test_devcontainer_continue_extension_when_enabled(
+        self, tmp_project_dir: Path, full_config: dict[str, Any]
+    ):
+        generate_project(full_config)
+        root = tmp_project_dir / "testproject"
+        content = (root / ".devcontainer" / "devcontainer.json").read_text()
+        assert "continue.continue" in content
+
+    def test_devcontainer_no_continue_extension_when_disabled(
+        self, tmp_project_dir: Path, minimal_config: dict[str, Any]
+    ):
+        minimal_config["devcontainer"] = True
+        generate_project(minimal_config)
+        root = tmp_project_dir / "testproject"
+        content = (root / ".devcontainer" / "devcontainer.json").read_text()
+        assert "continue.continue" not in content
 
     def test_dockerfile_content(
         self, tmp_project_dir: Path, full_config: dict[str, Any]

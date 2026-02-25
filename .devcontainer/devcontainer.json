@@ -6,6 +6,9 @@
   "containerEnv": {
     "UV_LINK_MODE": "copy"
   },
+  "runArgs": [
+    "--add-host=host.docker.internal:host-gateway"
+  ],
   "postCreateCommand": "make setup",
   "customizations": {
     "vscode": {
@@ -18,7 +21,8 @@
         "mhutchie.git-graph",
         "eamodio.gitlens",
         "tamasfe.even-better-toml",
-        "usernamehw.errorlens"
+        "usernamehw.errorlens",
+        "continue.continue"
       ]
     }
   }

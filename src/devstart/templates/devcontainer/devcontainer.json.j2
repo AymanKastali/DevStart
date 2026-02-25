@@ -6,6 +6,7 @@
   "containerEnv": {
     "UV_LINK_MODE": "copy"
   },
+  "runArgs": ["--add-host=host.docker.internal:host-gateway"],
 {%- if docker %}
   "features": {
     "ghcr.io/devcontainers/features/docker-in-docker:2": {
@@ -25,7 +26,9 @@
         "mhutchie.git-graph",
         "eamodio.gitlens",
         "tamasfe.even-better-toml",
-        "usernamehw.errorlens"{% if docker %},
+        "usernamehw.errorlens"{% if continue %},
+        "continue.continue"
+{%- endif %}{% if docker %},
         "ms-azuretools.vscode-docker"
 {%- endif %}{% if diagrams %},
         "jebbs.plantuml"

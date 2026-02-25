@@ -82,12 +82,15 @@ def generate_project(config: dict[str, Any]) -> list[Path]:
         "precommit": config["precommit"],
         "docker": config["docker"],
         "diagrams": config["diagrams"],
+        "continue": config["continue"],
     }
 
     _generate_source_tree(src, context, root=root, created=created)
     _generate_tests(root, context, created=created)
     _generate_root_files(root, context, created=created)
     _generate_vscode(root, context, created=created)
+    if config["continue"]:
+        _generate_continue(root, context, created=created)
 
     if config["docker"]:
         _generate_docker(root, context, created=created)
@@ -215,6 +218,21 @@ def _generate_vscode(
     _write_file(
         vscode / "settings.json",
         _render("base/vscode_settings.json.j2", context),
+        root=root,
+        created=created,
+    )
+
+
+def _generate_continue(
+    root: Path,
+    context: dict[str, Any],
+    *,
+    created: list[Path],
+) -> None:
+    """Generate .continue/config.yaml for local AI assistant."""
+    _write_file(
+        root / ".continue" / "config.yaml",
+        _render("base/continue_config.yaml.j2", context),
         root=root,
         created=created,
     )
