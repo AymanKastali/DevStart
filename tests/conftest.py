@@ -31,6 +31,7 @@ def full_config() -> dict[str, Any]:
         "precommit": True,
         "docker": True,
         "diagrams": True,
+        "continue": True,
         "_use_cwd": False,
     }
 
@@ -48,5 +49,6 @@ def minimal_config() -> dict[str, Any]:
         "precommit": False,
         "docker": False,
         "diagrams": False,
+        "continue": False,
         "_use_cwd": False,
     }

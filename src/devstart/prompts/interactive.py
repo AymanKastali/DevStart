@@ -115,4 +115,10 @@ def prompt_for_config(config: dict[str, Any]) -> dict[str, Any]:
             default=True,
         )
 
+    if config.get("continue") is None:
+        config["continue"] = _StyledConfirm.ask(
+            "  [bold]Include Continue local AI config?[/bold]",
+            default=True,
+        )
+
     return config

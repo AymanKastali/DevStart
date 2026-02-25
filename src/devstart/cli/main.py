@@ -110,6 +110,13 @@ def new(
             help="Include PlantUML diagram templates",
         ),
     ] = None,
+    continue_: Annotated[
+        bool | None,
+        typer.Option(
+            "--continue/--no-continue",
+            help="Include Continue local AI config",
+        ),
+    ] = None,
     no_interactive: Annotated[
         bool,
         typer.Option(
@@ -130,6 +137,7 @@ def new(
         "precommit": precommit,
         "docker": docker,
         "diagrams": diagrams,
+        "continue": continue_,
     }
 
     # Handle "." — scaffold into the current directory
@@ -159,6 +167,8 @@ def new(
             config["docker"] = True
         if config["diagrams"] is None:
             config["diagrams"] = True
+        if config["continue"] is None:
+            config["continue"] = True
     else:
         config = prompt_for_config(config)
 
@@ -221,6 +231,7 @@ def _print_config_summary(config: dict[str, Any]) -> None:
     table.add_row("Pre-commit", _yes if config["precommit"] else _no)
     table.add_row("Docker", _yes if config["docker"] else _no)
     table.add_row("Diagrams", _yes if config["diagrams"] else _no)
+    table.add_row("Continue", _yes if config["continue"] else _no)
 
     console.print(table)
 

@@ -46,6 +46,7 @@ class TestNewWithFlags:
                 "--no-devcontainer",
                 "--no-precommit",
                 "--no-docker",
+                "--no-continue",
                 "-y",
             ],
         )
