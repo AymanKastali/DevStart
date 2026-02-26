@@ -10,10 +10,14 @@ ensure-uv: ## Install uv if not present
 	@command -v uv >/dev/null 2>&1 || curl -LsSf https://astral.sh/uv/install.sh | sh
 
 setup: ensure-uv sync ## Set up the full dev environment
+	@if ! git rev-parse --git-dir >/dev/null 2>&1; then \
+		git init -b main; \
+	fi
 	uv run pre-commit install
 
 sync: ## Sync all dependencies
 	uv sync --all-groups
+	@if git rev-parse --git-dir >/dev/null 2>&1; then uv run pre-commit install; fi
 
 lint: ## Run ruff linter
 	uv run ruff check src/ tests/
