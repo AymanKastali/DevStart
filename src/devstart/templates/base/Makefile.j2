@@ -11,16 +11,17 @@ ensure-uv: ## Install uv if not present
 
 setup: ensure-uv sync ## Set up the full dev environment
 {%- if precommit %}
-	@if command -v git >/dev/null 2>&1; then \
-		git rev-parse --git-dir >/dev/null 2>&1 || git init -b main; \
-		uv run pre-commit install; \
-	else \
-		echo "Warning: git not found, skipping pre-commit install"; \
+	@if ! git rev-parse --git-dir >/dev/null 2>&1; then \
+		git init -b main; \
 	fi
+	uv run pre-commit install
 {%- endif %}
 
 sync: ## Sync all dependencies
 	uv sync --all-groups
+{%- if precommit %}
+	@if git rev-parse --git-dir >/dev/null 2>&1; then uv run pre-commit install; fi
+{%- endif %}
 
 lint: ## Run ruff linter
 	uv run ruff check .

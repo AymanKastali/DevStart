@@ -56,7 +56,7 @@ def generate_project(config: dict[str, Any]) -> list[Path]:
 
     if config.get("_use_cwd"):
         root = Path.cwd()
-        if any(root.iterdir()):
+        if any(p for p in root.iterdir() if p.name != ".git"):
             raise FileExistsError(
                 f"Current directory '{root}' is not empty. "
                 "Use '.' only in an empty directory."
