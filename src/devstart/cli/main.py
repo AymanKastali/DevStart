@@ -14,7 +14,7 @@ from rich.table import Table
 from rich.theme import Theme
 from rich.tree import Tree
 
-from devstart import __version__
+from devstart import __app_name__, __version__
 from devstart.defaults import (
     DEFAULT_AUTHOR,
     DEFAULT_DESCRIPTION,
@@ -47,7 +47,7 @@ app = typer.Typer(
 
 def version_callback(value: bool) -> None:
     if value:
-        console.print(f"[heading]devstart[/heading] [dim]v{__version__}[/dim]")
+        console.print(f"[heading]{__app_name__}[/heading] [dim]v{__version__}[/dim]")
         raise typer.Exit()
 
 
