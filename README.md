@@ -6,6 +6,7 @@ CLI tool that scaffolds Python projects with all dev tooling pre-configured.
 
 - Scaffolds a clean Python project with `src/` layout
 - Pre-configured dev tooling: ruff, mypy, pytest, debugpy
+- Hatch dynamic versioning — `__version__` in `__init__.py` as single source of truth
 - Docker & Docker Compose included by default
 - PlantUML diagram templates for project documentation
 - Optional: GitHub Actions CI, devcontainer, pre-commit hooks, Docker, diagrams
@@ -99,4 +100,4 @@ uv run ruff check src/
 
 ---
 
-*Generated projects come with ruff, mypy, pytest, and debugpy pre-configured.*
+*Generated projects come with ruff, mypy, pytest, debugpy, Docker, and hatch dynamic versioning pre-configured.*

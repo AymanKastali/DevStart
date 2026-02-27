@@ -33,6 +33,15 @@ jobs:
 
       - uses: astral-sh/setup-uv@v4
 
+      - name: Verify version matches tag
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          SOURCE_VERSION=$(grep -oP '__version__\s*=\s*"\K[^"]+' src/devstart/__init__.py)
+          if [ "$TAG_VERSION" != "$SOURCE_VERSION" ]; then
+            echo "::error::Tag version ($TAG_VERSION) does not match source version ($SOURCE_VERSION)"
+            exit 1
+          fi
+
       - run: uv build
 
       - uses: pypa/gh-action-pypi-publish@release/v1

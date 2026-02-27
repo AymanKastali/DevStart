@@ -1,6 +1,6 @@
 [project]
 name = "{{ project_name }}"
-version = "0.1.0"
+dynamic = ["version"]
 description = "{{ description }}"
 authors = [{ name = "{{ author }}" }]
 readme = "README.md"
@@ -15,6 +15,9 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/{{ project_name }}"]
+
+[tool.hatch.version]
+path = "src/{{ project_name }}/__init__.py"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

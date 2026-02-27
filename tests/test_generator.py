@@ -446,6 +446,40 @@ class TestTemplateRendering:
         assert "docs/diagrams/*.png" not in content
         assert "docs/diagrams/*.svg" not in content
 
+    def test_pyproject_uses_dynamic_version(
+        self, tmp_project_dir: Path, full_config: dict[str, Any]
+    ):
+        generate_project(full_config)
+        root = tmp_project_dir / "testproject"
+        content = (root / "pyproject.toml").read_text()
+        assert 'dynamic = ["version"]' in content
+        assert 'version = "0.1.0"' not in content
+
+    def test_pyproject_has_hatch_version_config(
+        self, tmp_project_dir: Path, full_config: dict[str, Any]
+    ):
+        generate_project(full_config)
+        root = tmp_project_dir / "testproject"
+        content = (root / "pyproject.toml").read_text()
+        assert "[tool.hatch.version]" in content
+        assert 'path = "src/testproject/__init__.py"' in content
+
+    def test_init_exports_version(
+        self, tmp_project_dir: Path, full_config: dict[str, Any]
+    ):
+        generate_project(full_config)
+        root = tmp_project_dir / "testproject"
+        content = (root / "src" / "testproject" / "__init__.py").read_text()
+        assert '__version__ = "0.1.0"' in content
+
+    def test_init_exports_app_name(
+        self, tmp_project_dir: Path, full_config: dict[str, Any]
+    ):
+        generate_project(full_config)
+        root = tmp_project_dir / "testproject"
+        content = (root / "src" / "testproject" / "__init__.py").read_text()
+        assert '__app_name__ = "testproject"' in content
+
     def test_different_python_version(
         self, tmp_project_dir: Path, full_config: dict[str, Any]
     ):
@@ -677,6 +711,18 @@ class TestGeneratedFilesParseable:
         root = tmp_project_dir / "testproject"
         content = (root / "pyproject.toml").read_text()
         assert "pre-commit" in content
+
+    def test_pyproject_dynamic_version_valid_toml(
+        self, tmp_project_dir: Path, full_config: dict[str, Any]
+    ):
+        generate_project(full_config)
+        root = tmp_project_dir / "testproject"
+        raw = (root / "pyproject.toml").read_bytes()
+        parsed = tomllib.loads(raw.decode())
+        assert "version" in parsed["project"]["dynamic"]
+        assert "version" not in parsed["project"]
+        hatch_path = parsed["tool"]["hatch"]["version"]["path"]
+        assert hatch_path == "src/testproject/__init__.py"
 
     def test_pyproject_excludes_precommit_dep_when_disabled(
         self, tmp_project_dir: Path, minimal_config: dict[str, Any]
