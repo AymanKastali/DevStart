@@ -4,7 +4,8 @@
   "remoteUser": "vscode",
   "updateRemoteUserUID": true,
   "containerEnv": {
-    "UV_LINK_MODE": "copy"
+    "UV_LINK_MODE": "copy",
+    "VIRTUAL_ENV": "/workspaces/DevStart/.venv"
   },
   "runArgs": [
     "--add-host=host.docker.internal:host-gateway"
