@@ -9,9 +9,11 @@ repos:
       - id: check-toml
       - id: check-json
       - id: check-ast
+        files: ^src/
       - id: check-merge-conflict
       - id: check-added-large-files
       - id: debug-statements
+        files: ^src/
       - id: detect-private-key
       - id: no-commit-to-branch
         args: [--branch, main]
@@ -22,7 +24,9 @@ repos:
     hooks:
       - id: ruff
         args: [--fix]
+        files: ^src/
       - id: ruff-format
+        files: ^src/
 
   # ── Spell checking ───────────────────────────────────────────────
   - repo: https://github.com/codespell-project/codespell
@@ -42,10 +46,11 @@ repos:
     hooks:
       - id: mypy
         name: mypy
-        entry: uv run mypy .
+        entry: uv run mypy src/
         language: system
         types: [python]
         pass_filenames: false
+        files: ^src/
 
   # ── Tests ──────────────────────────────────────────────────────
   - repo: local
@@ -56,3 +61,4 @@ repos:
         language: system
         types: [python]
         pass_filenames: false
+        files: ^src/

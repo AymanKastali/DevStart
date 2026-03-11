@@ -13,11 +13,11 @@ setup: ensure-uv sync ## Set up the full dev environment
 	@if ! git rev-parse --git-dir >/dev/null 2>&1; then \
 		git init -b main; \
 	fi
-	uv run pre-commit install
+	git config core.hooksPath .githooks
 
 sync: ## Sync all dependencies
 	uv sync --all-groups
-	@if git rev-parse --git-dir >/dev/null 2>&1; then uv run pre-commit install; fi
+	@if git rev-parse --git-dir >/dev/null 2>&1; then git config core.hooksPath .githooks; fi
 
 lint: ## Run ruff linter
 	uv run ruff check src/ tests/

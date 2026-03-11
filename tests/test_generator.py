@@ -28,6 +28,7 @@ class TestDirectoryStructure:
         assert (root / ".gitignore").is_file()
         assert (root / "Makefile").is_file()
         assert (root / ".env").is_file()
+        assert (root / ".python-version").is_file()
 
         # Source tree
         assert (root / "src" / "testproject" / "__init__.py").is_file()
@@ -108,6 +109,28 @@ class TestConditionalGeneration:
         generate_project(minimal_config)
         root = tmp_project_dir / "testproject"
         assert (root / ".pre-commit-config.yaml").is_file()
+        assert (root / ".githooks" / "pre-commit").is_file()
+
+    def test_precommit_hook_is_executable(
+        self, tmp_project_dir: Path, minimal_config: dict[str, Any]
+    ):
+        minimal_config["precommit"] = True
+        generate_project(minimal_config)
+        root = tmp_project_dir / "testproject"
+        import os
+        import stat
+
+        mode = os.stat(root / ".githooks" / "pre-commit").st_mode
+        assert mode & stat.S_IXUSR
+
+    def test_precommit_hook_uses_uv_run(
+        self, tmp_project_dir: Path, minimal_config: dict[str, Any]
+    ):
+        minimal_config["precommit"] = True
+        generate_project(minimal_config)
+        root = tmp_project_dir / "testproject"
+        content = (root / ".githooks" / "pre-commit").read_text()
+        assert "uv run pre-commit hook-impl" in content
 
     def test_precommit_skipped_when_disabled(
         self, tmp_project_dir: Path, minimal_config: dict[str, Any]
@@ -115,6 +138,7 @@ class TestConditionalGeneration:
         generate_project(minimal_config)
         root = tmp_project_dir / "testproject"
         assert not (root / ".pre-commit-config.yaml").exists()
+        assert not (root / ".githooks").exists()
 
     def test_docker_generated_when_enabled(
         self, tmp_project_dir: Path, minimal_config: dict[str, Any]
@@ -347,7 +371,7 @@ class TestTemplateRendering:
         root = tmp_project_dir / "testproject"
         content = (root / ".pre-commit-config.yaml").read_text()
         assert "id: mypy" in content
-        assert "entry: uv run mypy ." in content
+        assert "entry: uv run mypy src/" in content
         assert "language: system" in content
         assert "pass_filenames: false" in content
 
@@ -376,21 +400,21 @@ class TestTemplateRendering:
         assert "check:" in content
         assert "clean:" in content
 
-    def test_makefile_precommit_install_when_enabled(
+    def test_makefile_hooks_path_when_precommit_enabled(
         self, tmp_project_dir: Path, full_config: dict[str, Any]
     ):
         generate_project(full_config)
         root = tmp_project_dir / "testproject"
         content = (root / "Makefile").read_text()
-        assert "pre-commit install" in content
+        assert "git config core.hooksPath .githooks" in content
 
-    def test_makefile_no_precommit_install_when_disabled(
+    def test_makefile_no_hooks_path_when_precommit_disabled(
         self, tmp_project_dir: Path, minimal_config: dict[str, Any]
     ):
         generate_project(minimal_config)
         root = tmp_project_dir / "testproject"
         content = (root / "Makefile").read_text()
-        assert "pre-commit install" not in content
+        assert "core.hooksPath" not in content
 
     def test_makefile_diagrams_targets_when_enabled(
         self, tmp_project_dir: Path, full_config: dict[str, Any]
@@ -582,7 +606,7 @@ class TestGeneratedFileContent:
         generate_project(full_config)
         root = tmp_project_dir / "testproject"
         content = (root / ".devcontainer" / "devcontainer.json").read_text()
-        assert "docker-in-docker" in content
+        assert "docker-outside-of-docker" in content
         assert "ms-azuretools.vscode-docker" in content
 
     def test_devcontainer_no_docker_when_docker_disabled(
@@ -592,7 +616,7 @@ class TestGeneratedFileContent:
         generate_project(minimal_config)
         root = tmp_project_dir / "testproject"
         content = (root / ".devcontainer" / "devcontainer.json").read_text()
-        assert "docker-in-docker" not in content
+        assert "docker-outside-of-docker" not in content
         assert "ms-azuretools.vscode-docker" not in content
 
     def test_class_diagram_puml_content(

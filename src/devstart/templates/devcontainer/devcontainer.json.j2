@@ -7,10 +7,14 @@
     "UV_LINK_MODE": "copy",
     "VIRTUAL_ENV": "/workspaces/{{ project_name }}/.venv"
   },
-  "runArgs": ["--add-host=host.docker.internal:host-gateway"],
+  "initializeCommand": "docker network create {{ project_name }} 2>/dev/null || true",
+  "runArgs": [
+    "--add-host=host.docker.internal:host-gateway",
+    "--network={{ project_name }}"
+  ],
 {%- if docker %}
   "features": {
-    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
       "moby": false
     }
   },

@@ -7,9 +7,16 @@
     "UV_LINK_MODE": "copy",
     "VIRTUAL_ENV": "/workspaces/DevStart/.venv"
   },
+  "initializeCommand": "docker network create devstart 2>/dev/null || true",
   "runArgs": [
-    "--add-host=host.docker.internal:host-gateway"
+    "--add-host=host.docker.internal:host-gateway",
+    "--network=devstart"
   ],
+  "features": {
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
+      "moby": false
+    }
+  },
   "postCreateCommand": "make setup",
   "customizations": {
     "vscode": {
