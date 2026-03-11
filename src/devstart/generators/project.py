@@ -199,6 +199,12 @@ def _generate_root_files(
         root=root,
         created=created,
     )
+    _write_file(
+        root / ".python-version",
+        _render("base/python-version.j2", context),
+        root=root,
+        created=created,
+    )
 
 
 def _generate_vscode(
@@ -304,13 +310,21 @@ def _generate_precommit(
     *,
     created: list[Path],
 ) -> None:
-    """Generate pre-commit configuration."""
+    """Generate pre-commit configuration and git hook wrapper."""
     _write_file(
         root / ".pre-commit-config.yaml",
         _render("precommit/pre-commit-config.yaml.j2", context),
         root=root,
         created=created,
     )
+    hook_path = root / ".githooks" / "pre-commit"
+    _write_file(
+        hook_path,
+        _render("precommit/pre-commit-hook.j2", context),
+        root=root,
+        created=created,
+    )
+    hook_path.chmod(0o755)
 
 
 def _generate_diagrams(

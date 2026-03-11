@@ -4,15 +4,27 @@
   "remoteUser": "vscode",
   "updateRemoteUserUID": true,
   "containerEnv": {
-    "UV_LINK_MODE": "copy",
-    "VIRTUAL_ENV": "/workspaces/DevStart/.venv"
+    "UV_LINK_MODE": "copy"
   },
+  "initializeCommand": "docker network create devstart 2>/dev/null || true",
   "runArgs": [
-    "--add-host=host.docker.internal:host-gateway"
+    "--add-host=host.docker.internal:host-gateway",
+    "--network=devstart"
   ],
-  "postCreateCommand": "make setup",
+  "mounts": [
+    "source=devstart-venv,target=${containerWorkspaceFolder}/.venv,type=volume"
+  ],
+  "features": {
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
+      "moby": false
+    }
+  },
+  "postCreateCommand": "sudo chown vscode:vscode .venv && make setup",
   "customizations": {
     "vscode": {
+      "settings": {
+        "python.terminal.useEnvFile": true
+      },
       "extensions": [
         "ms-python.python",
         "ms-python.debugpy",
