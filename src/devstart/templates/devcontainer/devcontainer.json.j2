@@ -4,13 +4,15 @@
   "remoteUser": "vscode",
   "updateRemoteUserUID": true,
   "containerEnv": {
-    "UV_LINK_MODE": "copy",
-    "VIRTUAL_ENV": "/workspaces/{{ project_name }}/.venv"
+    "UV_LINK_MODE": "copy"
   },
   "initializeCommand": "docker network create {{ project_name }} 2>/dev/null || true",
   "runArgs": [
     "--add-host=host.docker.internal:host-gateway",
     "--network={{ project_name }}"
+  ],
+  "mounts": [
+    "source={{ project_name }}-venv,target=${containerWorkspaceFolder}/.venv,type=volume"
   ],
 {%- if docker %}
   "features": {
@@ -19,9 +21,12 @@
     }
   },
 {%- endif %}
-  "postCreateCommand": "make setup",
+  "postCreateCommand": "sudo chown vscode:vscode .venv && make setup",
   "customizations": {
     "vscode": {
+      "settings": {
+        "python.terminal.useEnvFile": true
+      },
       "extensions": [
         "ms-python.python",
         "ms-python.debugpy",
