@@ -26,7 +26,7 @@ configure-git:
 	@if ! git rev-parse --git-dir >/dev/null 2>&1; then \
 		git init -b main; \
 	fi
-	git config core.hooksPath .githooks
+	uv run pre-commit install
 
 # --- Quality ---
 
