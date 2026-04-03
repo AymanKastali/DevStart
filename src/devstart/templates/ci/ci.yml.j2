@@ -22,31 +22,7 @@ jobs:
       - name: Set up Python {% raw %}${{ matrix.python-version }}{% endraw %}
         run: uv python install {% raw %}${{ matrix.python-version }}{% endraw %}
 
-{%- if precommit %}
-
       - name: Run pre-commit checks
         uses: pre-commit/action@v3.0.1
         env:
           SKIP: no-commit-to-branch
-{%- else %}
-
-      - name: Lint with ruff
-        run: uv run ruff check .
-
-      - name: Check formatting
-        run: uv run ruff format --check .
-
-      - name: Spell check with codespell
-        run: uv run codespell --skip "*.lock"
-
-      - name: Secret detection with gitleaks
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: {% raw %}${{ secrets.GITHUB_TOKEN }}{% endraw %}
-
-      - name: Type check with mypy
-        run: uv run mypy .
-
-      - name: Run tests
-        run: uv run pytest --cov=src/{{ project_name }} --cov-report=term-missing
-{%- endif %}

@@ -1,5 +1,5 @@
 {
-  "python.defaultInterpreterPath": "/workspaces/{{ project_name }}/.venv/bin/python",
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
   "editor.formatOnSave": true,
   "editor.defaultFormatter": "charliermarsh.ruff",
   "[python]": {
@@ -15,9 +15,8 @@
   "python.testing.pytestArgs": ["tests"],
   "files.exclude": {
     "**/__pycache__": true
-  }{% if diagrams %},
+  },
   "plantuml.render": "PlantUMLServer",
   "plantuml.server": "https://www.plantuml.com/plantuml",
   "plantuml.exportOutDir": "docs/diagrams"
-{%- endif %}
 }

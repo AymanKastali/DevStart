@@ -1,14 +1,13 @@
 """Shared test fixtures for devstart."""
 
-from __future__ import annotations
-
 from typing import TYPE_CHECKING
 
 import pytest
 
+from devstart.config import ProjectConfig
+
 if TYPE_CHECKING:
     from pathlib import Path
-    from typing import Any
 
 
 @pytest.fixture
@@ -19,36 +18,12 @@ def tmp_project_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 
 @pytest.fixture
-def full_config() -> dict[str, Any]:
-    """Return a complete project configuration with all features enabled."""
-    return {
-        "name": "testproject",
-        "description": "A test project",
-        "author": "Test Author",
-        "python": "3.14",
-        "ci": True,
-        "devcontainer": True,
-        "precommit": True,
-        "docker": True,
-        "diagrams": True,
-        "continue": True,
-        "_use_cwd": False,
-    }
-
-
-@pytest.fixture
-def minimal_config() -> dict[str, Any]:
-    """Return a minimal project configuration with optional features disabled."""
-    return {
-        "name": "testproject",
-        "description": "A test project",
-        "author": "Test Author",
-        "python": "3.14",
-        "ci": False,
-        "devcontainer": False,
-        "precommit": False,
-        "docker": False,
-        "diagrams": False,
-        "continue": False,
-        "_use_cwd": False,
-    }
+def default_config() -> ProjectConfig:
+    """Return a default project configuration."""
+    return ProjectConfig(
+        project_name="testproject",
+        description="A test project",
+        author="Test Author",
+        python_version="3.14",
+        should_use_cwd=False,
+    )

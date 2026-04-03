@@ -1,25 +1,19 @@
 {
   "name": "devstart",
-  "image": "mcr.microsoft.com/devcontainers/python:3.14",
+  "dockerComposeFile": [
+    "docker-compose.yml"
+  ],
+  "service": "devcontainer",
+  "workspaceFolder": "/workspaces/devstart",
   "remoteUser": "vscode",
   "updateRemoteUserUID": true,
-  "containerEnv": {
-    "UV_LINK_MODE": "copy"
-  },
-  "initializeCommand": "docker network create devstart 2>/dev/null || true",
-  "runArgs": [
-    "--add-host=host.docker.internal:host-gateway",
-    "--network=devstart"
-  ],
-  "mounts": [
-    "source=devstart-venv,target=${containerWorkspaceFolder}/.venv,type=volume"
-  ],
   "features": {
     "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
       "moby": false
-    }
+    },
+    "ghcr.io/devcontainers/features/common-utils:2": {}
   },
-  "postCreateCommand": "sudo chown vscode:vscode .venv && make setup",
+  "postCreateCommand": "make setup",
   "customizations": {
     "vscode": {
       "settings": {
@@ -35,7 +29,8 @@
         "eamodio.gitlens",
         "tamasfe.even-better-toml",
         "usernamehw.errorlens",
-        "continue.continue"
+        "ms-azuretools.vscode-docker",
+        "jebbs.plantuml"
       ]
     }
   }

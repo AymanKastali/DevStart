@@ -4,8 +4,9 @@ import keyword
 import re
 import sys
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Annotated
 
+import click
 import typer
 from rich import box
 from rich.console import Console
@@ -15,11 +16,12 @@ from rich.theme import Theme
 from rich.tree import Tree
 
 from devstart import __app_name__, __version__
+from devstart.config import ProjectConfig
 from devstart.defaults import (
     DEFAULT_AUTHOR,
     DEFAULT_DESCRIPTION,
     DEFAULT_PROJECT_NAME,
-    DEFAULT_PYTHON_VERSION,
+    SUPPORTED_PYTHON_VERSIONS,
 )
 from devstart.generators.project import generate_project
 from devstart.prompts.interactive import prompt_for_config
@@ -46,6 +48,7 @@ app = typer.Typer(
 
 
 def version_callback(value: bool) -> None:
+    """Print version and exit when --version flag is passed."""
     if value:
         console.print(f"[heading]{__app_name__}[/heading] [dim]v{__version__}[/dim]")
         raise typer.Exit()
@@ -79,42 +82,11 @@ def new(
         typer.Option("--author", "-a", help="Author name"),
     ] = None,
     python: Annotated[
-        str, typer.Option("--python", help="Python version")
-    ] = DEFAULT_PYTHON_VERSION,
-    ci: Annotated[
-        bool | None,
-        typer.Option("--ci/--no-ci", help="Include GitHub Actions CI"),
-    ] = None,
-    devcontainer: Annotated[
-        bool | None,
+        str | None,
         typer.Option(
-            "--devcontainer/--no-devcontainer",
-            help="Include devcontainer setup",
-        ),
-    ] = None,
-    precommit: Annotated[
-        bool | None,
-        typer.Option(
-            "--precommit/--no-precommit",
-            help="Include pre-commit hooks config",
-        ),
-    ] = None,
-    docker: Annotated[
-        bool | None,
-        typer.Option("--docker/--no-docker", help="Include Docker setup"),
-    ] = None,
-    diagrams: Annotated[
-        bool | None,
-        typer.Option(
-            "--diagrams/--no-diagrams",
-            help="Include PlantUML diagram templates",
-        ),
-    ] = None,
-    continue_: Annotated[
-        bool | None,
-        typer.Option(
-            "--continue/--no-continue",
-            help="Include Continue local AI config",
+            "--python",
+            help="Python version",
+            click_type=click.Choice(SUPPORTED_PYTHON_VERSIONS),
         ),
     ] = None,
     no_interactive: Annotated[
@@ -127,89 +99,119 @@ def new(
     ] = False,
 ) -> None:
     """Create a new Python project with dev tooling pre-configured."""
-    config = {
-        "name": name,
+    config: ProjectConfig = _build_config(
+        name, description, author, python, no_interactive,
+    )
+    _validate_project_name(config.project_name)
+    _print_config_summary(config)
+    created: list[Path] = _generate_with_status(config)
+    _print_file_tree(config.project_name, created)
+    _print_success(config)
+
+
+def _build_config(
+    name: str | None,
+    description: str | None,
+    author: str | None,
+    python: str | None,
+    is_non_interactive: bool,
+) -> ProjectConfig:
+    """Assemble a ProjectConfig from CLI args, prompts, or defaults."""
+    resolved_name: str | None = name
+    should_use_cwd: bool = False
+
+    if name == ".":
+        resolved_name, should_use_cwd = _resolve_cwd_project_name()
+
+    partial: dict[str, str | bool | None] = {
+        "name": resolved_name,
         "description": description,
         "author": author,
         "python": python,
-        "ci": ci,
-        "devcontainer": devcontainer,
-        "precommit": precommit,
-        "docker": docker,
-        "diagrams": diagrams,
-        "continue": continue_,
     }
 
-    # Handle "." — scaffold into the current directory
-    if config["name"] == ".":
-        cwd = Path.cwd()
-        converted = re.sub(r"[^a-zA-Z0-9_]", "_", cwd.name)
-        if not converted:
-            converted = DEFAULT_PROJECT_NAME
-        elif converted[0].isdigit():
-            converted = f"_{converted}"
-        config["name"] = converted
-        config["_use_cwd"] = True
+    if is_non_interactive:
+        partial = _apply_non_interactive_defaults(partial)
     else:
-        config["_use_cwd"] = False
+        partial = prompt_for_config(partial)
 
-    if no_interactive:
-        config["name"] = config["name"] or DEFAULT_PROJECT_NAME
-        config["description"] = config["description"] or DEFAULT_DESCRIPTION
-        config["author"] = config["author"] or DEFAULT_AUTHOR
-        if config["ci"] is None:
-            config["ci"] = True
-        if config["devcontainer"] is None:
-            config["devcontainer"] = True
-        if config["precommit"] is None:
-            config["precommit"] = True
-        if config["docker"] is None:
-            config["docker"] = True
-        if config["diagrams"] is None:
-            config["diagrams"] = True
-        if config["continue"] is None:
-            config["continue"] = True
-    else:
-        config = prompt_for_config(config)
+    return _partial_to_config(partial, should_use_cwd)
 
-    if not isinstance(config["name"], str):
+
+def _resolve_cwd_project_name() -> tuple[str, bool]:
+    """Derive a valid project name from the current directory."""
+    cwd: Path = Path.cwd()
+    converted: str = re.sub(r"[^a-zA-Z0-9_]", "_", cwd.name)
+    if not converted:
+        converted = DEFAULT_PROJECT_NAME
+    elif converted[0].isdigit():
+        converted = f"_{converted}"
+    return converted, True
+
+
+def _apply_non_interactive_defaults(
+    partial: dict[str, str | bool | None],
+) -> dict[str, str | bool | None]:
+    """Fill missing values with sensible defaults."""
+    partial["name"] = partial["name"] or DEFAULT_PROJECT_NAME
+    partial["description"] = partial["description"] or DEFAULT_DESCRIPTION
+    partial["author"] = partial["author"] or DEFAULT_AUTHOR
+    return partial
+
+
+def _partial_to_config(
+    partial: dict[str, str | bool | None],
+    should_use_cwd: bool,
+) -> ProjectConfig:
+    """Convert a fully-populated partial dict into a ProjectConfig."""
+    project_name: str | bool | None = partial["name"]
+    if not isinstance(project_name, str):
         console.print("\n[error]✘ Project name is required.[/error]")
         raise typer.Exit(code=1)
-    project_name: str = config["name"]
-    _validate_project_name(project_name)
-    _validate_python_version(str(config["python"]))
 
-    # --- Config summary ---
-    _print_config_summary(config)
+    python_version: str | bool | None = partial["python"]
+    if not isinstance(python_version, str):
+        console.print("\n[error]✘ Python version is required (use --python).[/error]")
+        raise typer.Exit(code=1)
 
-    # --- Generate ---
+    return ProjectConfig(
+        project_name=project_name,
+        description=str(partial["description"]),
+        author=str(partial["author"]),
+        python_version=python_version,
+        should_use_cwd=should_use_cwd,
+    )
+
+
+def _generate_with_status(config: ProjectConfig) -> list[Path]:
+    """Run project generation with a Rich spinner and error handling."""
     console.print()
     try:
         with console.status(
             "[heading]Generating project...[/heading]",
             spinner="dots",
         ):
-            created = generate_project(config)
-    except FileExistsError as e:
-        console.print(f"\n[error]  ✘ {e}[/error]")
-        raise typer.Exit(code=1) from e
-    except OSError as e:
-        console.print(f"\n[error]  ✘ {e}[/error]")
-        raise typer.Exit(code=1) from e
-
-    # --- File tree ---
-    _print_file_tree(project_name, created)
-
-    # --- Success ---
-    _print_success(project_name, config)
+            return generate_project(config)
+    except FileExistsError as error:
+        console.print(f"\n[error]  ✘ {error}[/error]")
+        raise typer.Exit(code=1) from error
+    except OSError as error:
+        console.print(f"\n[error]  ✘ {error}[/error]")
+        raise typer.Exit(code=1) from error
 
 
-def _print_config_summary(config: dict[str, Any]) -> None:
+def _print_config_summary(config: ProjectConfig) -> None:
     """Print a Rich table summarising the project configuration."""
     console.print()
     console.rule("[heading]Configuration[/heading]")
     console.print()
 
+    table: Table = _build_config_table(config)
+    console.print(table)
+
+
+def _build_config_table(config: ProjectConfig) -> Table:
+    """Build a Rich table with configuration key-value rows."""
     table = Table(
         box=box.SIMPLE,
         show_header=False,
@@ -219,21 +221,12 @@ def _print_config_summary(config: dict[str, Any]) -> None:
     table.add_column("Setting", style="key")
     table.add_column("Value", style="value")
 
-    table.add_row("Project", f"[bold]{config['name']}[/bold]")
-    table.add_row("Description", config["description"])
-    table.add_row("Author", config["author"])
-    table.add_row("Python", config["python"])
+    table.add_row("Project", f"[bold]{config.project_name}[/bold]")
+    table.add_row("Description", config.description)
+    table.add_row("Author", config.author)
+    table.add_row("Python", config.python_version)
 
-    _yes = "[green]yes[/green]"
-    _no = "[dim]no[/dim]"
-    table.add_row("CI", _yes if config["ci"] else _no)
-    table.add_row("Devcontainer", _yes if config["devcontainer"] else _no)
-    table.add_row("Pre-commit", _yes if config["precommit"] else _no)
-    table.add_row("Docker", _yes if config["docker"] else _no)
-    table.add_row("Diagrams", _yes if config["diagrams"] else _no)
-    table.add_row("Continue", _yes if config["continue"] else _no)
-
-    console.print(table)
+    return table
 
 
 def _print_file_tree(project_name: str, created: list[Path]) -> None:
@@ -247,37 +240,36 @@ def _print_file_tree(project_name: str, created: list[Path]) -> None:
         guide_style="bright_blue",
     )
 
-    # Build nested tree from flat relative paths
     nodes: dict[str, Tree] = {}
     for path in sorted(created):
-        parts = path.parts
-        current = tree
-        for i, part in enumerate(parts):
-            key = "/".join(parts[: i + 1])
+        parts: tuple[str, ...] = path.parts
+        current: Tree = tree
+        for index, part in enumerate(parts):
+            key: str = "/".join(parts[: index + 1])
             if key not in nodes:
-                is_file = i == len(parts) - 1
-                label = f"[green]{part}[/green]" if is_file else f"[bold]{part}/[/bold]"
+                is_file: bool = index == len(parts) - 1
+                label: str = f"[green]{part}[/green]" if is_file else f"[bold]{part}/[/bold]"
                 nodes[key] = current.add(label)
             current = nodes[key]
 
     console.print(tree)
 
 
-def _print_success(project_name: str, config: dict[str, Any]) -> None:
+def _print_success(config: ProjectConfig) -> None:
     """Print the success panel with next-steps instructions."""
     console.print()
 
-    cd_cmd = f"cd {project_name}" if not config.get("_use_cwd") else ""
-    steps_lines = []
+    cd_cmd: str = f"cd {config.project_name}" if not config.should_use_cwd else ""
+    steps_lines: list[str] = []
     if cd_cmd:
         steps_lines.append(f"  [bold]$[/bold] {cd_cmd}")
     steps_lines.append("  [bold]$[/bold] make setup")
-    steps_lines.append(f"  [bold]$[/bold] uv run python -m {project_name}")
-    steps = "\n".join(steps_lines)
+    steps_lines.append(f"  [bold]$[/bold] uv run python -m {config.project_name}")
+    steps: str = "\n".join(steps_lines)
 
     console.print(
         Panel(
-            f"[success]✔ Project [bold]'{project_name}'[/bold]"
+            f"[success]✔ Project [bold]'{config.project_name}'[/bold]"
             f" created successfully![/success]"
             f"\n\n[dim]Next steps:[/dim]\n{steps}",
             border_style="green",
@@ -285,17 +277,6 @@ def _print_success(project_name: str, config: dict[str, Any]) -> None:
             expand=False,
         )
     )
-
-
-def _validate_python_version(version: str) -> None:
-    """Validate that the Python version is in X.Y format."""
-    if not re.match(r"^\d+\.\d+$", version):
-        console.print(
-            f"\n[error]✘ Invalid Python version"
-            f" '{version}'.[/error]"
-            f" Expected format: X.Y (e.g. 3.14)."
-        )
-        raise typer.Exit(code=1)
 
 
 _RESERVED_NAMES: set[str] = {
@@ -311,34 +292,50 @@ _RESERVED_NAMES: set[str] = {
 
 def _validate_project_name(name: str) -> None:
     """Validate that the project name is a valid Python identifier."""
+    _reject_invalid_identifier(name)
+    _reject_python_keyword(name)
+    _reject_dunder_name(name)
+    _reject_reserved_name(name)
+
+
+def _reject_invalid_identifier(name: str) -> None:
+    """Exit if name is not a valid Python identifier."""
     if not re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", name):
-        suggestion = re.sub(r"[^a-zA-Z0-9_]", "_", name)
+        suggestion: str = re.sub(r"[^a-zA-Z0-9_]", "_", name)
         console.print(
-            f"\n[error]✘ Invalid project name"
-            f" '{name}'.[/error]"
+            f"\n[error]✘ Invalid project name '{name}'.[/error]"
             f" Only letters, digits, and underscores"
             f" are allowed (cannot start with a digit)."
             f" Hint: try [bold]'{suggestion}'[/bold]."
         )
         raise typer.Exit(code=1)
+
+
+def _reject_python_keyword(name: str) -> None:
+    """Exit if name is a Python keyword."""
     if keyword.iskeyword(name):
         console.print(
-            f"\n[error]✘ Invalid project name"
-            f" '{name}'.[/error]"
+            f"\n[error]✘ Invalid project name '{name}'.[/error]"
             f" Python keywords are not allowed."
         )
         raise typer.Exit(code=1)
+
+
+def _reject_dunder_name(name: str) -> None:
+    """Exit if name is a dunder name."""
     if name.startswith("__") and name.endswith("__"):
         console.print(
-            f"\n[error]✘ Invalid project name"
-            f" '{name}'.[/error]"
+            f"\n[error]✘ Invalid project name '{name}'.[/error]"
             f" Dunder names are reserved by Python."
         )
         raise typer.Exit(code=1)
+
+
+def _reject_reserved_name(name: str) -> None:
+    """Exit if name conflicts with stdlib or reserved names."""
     if name in _RESERVED_NAMES or name in sys.stdlib_module_names:
         console.print(
-            f"\n[error]✘ Invalid project name"
-            f" '{name}'.[/error]"
+            f"\n[error]✘ Invalid project name '{name}'.[/error]"
             f" This name conflicts with a Python"
             f" standard library module or reserved name."
         )

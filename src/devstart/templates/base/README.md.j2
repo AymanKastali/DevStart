@@ -12,42 +12,46 @@
 ### Setup
 
 ```bash
-uv sync
+make setup
 ```
 
 ### Run
 
 ```bash
-uv run python -m {{ project_name }}
+make dev
 ```
 
 ### Test
 
 ```bash
-uv run pytest
+make test
 ```
 
 ### Lint
 
 ```bash
-uv run ruff check .
+make check
 ```
-
-### Type Check
-
-```bash
-uv run mypy .
-```
-
-{%- if docker %}
 
 ## Docker
 
+Start infrastructure only:
+
 ```bash
-docker compose -f docker/docker-compose.yml up --build
+make infra
 ```
-{%- endif %}
-{%- if diagrams %}
+
+Start app + infrastructure:
+
+```bash
+make docker-up
+```
+
+Build and start:
+
+```bash
+make docker-build
+```
 
 ## Diagrams
 
@@ -56,7 +60,14 @@ PlantUML architecture and design diagrams are in `docs/diagrams/`. Render to PNG
 ```bash
 make diagrams
 ```
-{%- endif %}
+
+## Release
+
+Tag and push a release:
+
+```bash
+make release V=1.0.0
+```
 
 ---
 
