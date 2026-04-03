@@ -55,6 +55,35 @@ security: ## Run bandit security scan
 
 check: lint format-check type-check security test ## Run all checks
 
+# --- Release ---
+
+VERSION_FILE := src/devstart/__init__.py
+
+.PHONY: bump-version changelog build tag release publish
+
+bump-version: ## Bump version in __init__.py (VERSION=x.y.z)
+	@test -n "$(VERSION)" || (echo "ERROR: VERSION is required (e.g. make bump-version VERSION=0.2.0)" && exit 1)
+	sed -i 's/__version__ = ".*"/__version__ = "$(VERSION)"/' $(VERSION_FILE)
+	@echo "Version bumped to $(VERSION)"
+
+changelog: ## Show commits since last tag
+	@echo "## Changes since $$(git describe --tags --abbrev=0):"
+	@git log $$(git describe --tags --abbrev=0)..HEAD --oneline --no-merges
+
+build: clean ## Build distribution packages
+	uv build
+
+tag: ## Create annotated git tag (VERSION=x.y.z)
+	@test -n "$(VERSION)" || (echo "ERROR: VERSION is required (e.g. make tag VERSION=0.2.0)" && exit 1)
+	git tag -a "v$(VERSION)" -m "Release v$(VERSION)"
+	@echo "Tagged v$(VERSION)"
+
+release: check bump-version build tag ## Full release: check → bump → build → tag (VERSION=x.y.z)
+	@echo "Release v$(VERSION) prepared. Run 'make publish' to upload to PyPI."
+
+publish: ## Publish to PyPI
+	uv publish
+
 # --- Cleanup ---
 
 .PHONY: clean
