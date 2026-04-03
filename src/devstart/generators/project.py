@@ -1,10 +1,13 @@
 """Project generator — orchestrates Python project scaffolding."""
 
+import stat
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from jinja2 import Environment, PackageLoader, select_autoescape
 
-from devstart.config import ProjectConfig
+if TYPE_CHECKING:
+    from devstart.config import ProjectConfig
 
 TEMPLATE_ENV = Environment(
     loader=PackageLoader("devstart", "templates"),
@@ -284,12 +287,22 @@ def _generate_precommit(
     *,
     created: list[Path],
 ) -> None:
-    """Generate pre-commit configuration."""
+    """Generate pre-commit configuration and git hook wrapper."""
     _write_file(
         root / ".pre-commit-config.yaml",
         _render("precommit/pre-commit-config.yaml.j2", context),
         root=root,
         created=created,
+    )
+    hook_path: Path = root / ".githooks" / "pre-commit"
+    _write_file(
+        hook_path,
+        _render("precommit/pre-commit-hook.j2", context),
+        root=root,
+        created=created,
+    )
+    hook_path.chmod(
+        hook_path.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
     )
 
 

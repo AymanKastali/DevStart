@@ -269,7 +269,7 @@ class TestTemplateRendering:
         assert "clean:" in content
         assert "dev:" in content
         assert "uv run python -m testproject" in content
-        assert "uv run pre-commit install" in content
+        assert "core.hooksPath .githooks" in content
 
     def test_makefile_docker_targets(
         self, tmp_project_dir: Path, default_config: ProjectConfig
