@@ -1,23 +1,36 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help ensure-uv setup sync lint format format-check type-check test test-cov security check clean
+# --- Environment ---
+
+.PHONY: help ensure-uv setup sync install-shell-completion configure-git
 
 help: ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
 		awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
 
-ensure-uv: ## Install uv if not present
+ensure-uv:
 	@command -v uv >/dev/null 2>&1 || curl -LsSf https://astral.sh/uv/install.sh | sh
 
-setup: ensure-uv sync ## Set up the full dev environment
+setup: ensure-uv sync install-shell-completion configure-git ## Set up the full dev environment
+
+sync: ## Sync all dependencies
+	uv sync --all-groups
+
+install-shell-completion:
+	@dpkg -s bash-completion >/dev/null 2>&1 || \
+		(sudo apt-get update && sudo apt-get install -y bash-completion && sudo rm -rf /var/lib/apt/lists/*)
+	@grep -q 'bash_completion' ~/.bashrc 2>/dev/null || \
+		printf '\nif [ -f /etc/bash_completion ]; then\n  . /etc/bash_completion\nfi\n' >> ~/.bashrc
+
+configure-git:
 	@if ! git rev-parse --git-dir >/dev/null 2>&1; then \
 		git init -b main; \
 	fi
 	git config core.hooksPath .githooks
 
-sync: ## Sync all dependencies
-	uv sync --all-groups
-	@if git rev-parse --git-dir >/dev/null 2>&1; then git config core.hooksPath .githooks; fi
+# --- Quality ---
+
+.PHONY: lint format format-check type-check test test-cov security check
 
 lint: ## Run ruff linter
 	uv run ruff check src/ tests/
@@ -40,7 +53,11 @@ test-cov: ## Run tests with coverage report
 security: ## Run bandit security scan
 	uv run bandit -c pyproject.toml -r src/
 
-check: lint format-check type-check security test ## Run all checks (lint + format + types + security + tests)
+check: lint format-check type-check security test ## Run all checks
+
+# --- Cleanup ---
+
+.PHONY: clean
 
 clean: ## Remove build artifacts and caches
 	rm -rf dist/ build/ .ruff_cache/ .pytest_cache/ .mypy_cache/

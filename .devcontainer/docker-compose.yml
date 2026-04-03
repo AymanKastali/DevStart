@@ -1,0 +1,8 @@
+services:
+  devcontainer:
+    image: mcr.microsoft.com/devcontainers/python:3.14
+    environment:
+      UV_LINK_MODE: copy
+    volumes:
+      - ..:/workspaces/devstart:cached
+    command: sleep infinity

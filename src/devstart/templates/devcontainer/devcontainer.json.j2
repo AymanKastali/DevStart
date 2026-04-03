@@ -1,27 +1,17 @@
 {
   "name": "{{ project_name }}",
-  "image": "mcr.microsoft.com/devcontainers/python:{{ python_version }}",
+  "dockerComposeFile": ["docker-compose.yml", "../docker/docker-compose.yml"],
+  "service": "devcontainer",
+  "workspaceFolder": "/workspaces/{{ project_name }}",
   "remoteUser": "vscode",
   "updateRemoteUserUID": true,
-  "containerEnv": {
-    "UV_LINK_MODE": "copy"
-  },
-  "initializeCommand": "docker network create {{ project_name }} 2>/dev/null || true",
-  "runArgs": [
-    "--add-host=host.docker.internal:host-gateway",
-    "--network={{ project_name }}"
-  ],
-  "mounts": [
-    "source={{ project_name }}-venv,target=${containerWorkspaceFolder}/.venv,type=volume"
-  ],
-{%- if docker %}
   "features": {
     "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
       "moby": false
-    }
+    },
+    "ghcr.io/devcontainers/features/common-utils:2": {}
   },
-{%- endif %}
-  "postCreateCommand": "sudo chown vscode:vscode .venv && make setup",
+  "postCreateCommand": "make setup",
   "customizations": {
     "vscode": {
       "settings": {
@@ -36,13 +26,12 @@
         "mhutchie.git-graph",
         "eamodio.gitlens",
         "tamasfe.even-better-toml",
-        "usernamehw.errorlens"{% if continue %},
-        "continue.continue"
-{%- endif %}{% if docker %},
-        "ms-azuretools.vscode-docker"
-{%- endif %}{% if diagrams %},
-        "jebbs.plantuml"
-{%- endif %}
+        "usernamehw.errorlens",
+        "ms-azuretools.vscode-docker",
+        "jebbs.plantuml",
+        "github.vscode-pull-request-github",
+        "codezombiech.gitignore",
+        "github.vscode-github-actions"
       ]
     }
   }
