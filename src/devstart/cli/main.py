@@ -100,7 +100,11 @@ def new(
 ) -> None:
     """Create a new Python project with dev tooling pre-configured."""
     config: ProjectConfig = _build_config(
-        name, description, author, python, no_interactive,
+        name,
+        description,
+        author,
+        python,
+        no_interactive,
     )
     _validate_project_name(config.project_name)
     _print_config_summary(config)
@@ -248,7 +252,9 @@ def _print_file_tree(project_name: str, created: list[Path]) -> None:
             key: str = "/".join(parts[: index + 1])
             if key not in nodes:
                 is_file: bool = index == len(parts) - 1
-                label: str = f"[green]{part}[/green]" if is_file else f"[bold]{part}/[/bold]"
+                label: str = (
+                    f"[green]{part}[/green]" if is_file else f"[bold]{part}/[/bold]"
+                )
                 nodes[key] = current.add(label)
             current = nodes[key]
 

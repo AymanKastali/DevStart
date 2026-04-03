@@ -90,7 +90,9 @@ def _select_from_list(label: str, options: list[str]) -> str:
     return options[selected]
 
 
-def prompt_for_config(config: dict[str, str | bool | None]) -> dict[str, str | bool | None]:
+def prompt_for_config(
+    config: dict[str, str | bool | None],
+) -> dict[str, str | bool | None]:
     """Prompt for any missing configuration values using Rich prompts.
 
     Only prompts for values not already provided via CLI flags.
@@ -125,7 +127,8 @@ def prompt_for_config(config: dict[str, str | bool | None]) -> dict[str, str | b
 
     if config.get("python") is None:
         config["python"] = _select_from_list(
-            "Python version", SUPPORTED_PYTHON_VERSIONS,
+            "Python version",
+            SUPPORTED_PYTHON_VERSIONS,
         )
 
     return config
