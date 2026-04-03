@@ -33,13 +33,13 @@ configure-git:
 .PHONY: lint format format-check type-check test test-cov security check
 
 lint: ## Run ruff linter
-	uv run ruff check src/ tests/
+	uv run ruff check .
 
 format: ## Auto-format code with ruff
-	uv run ruff format src/ tests/
+	uv run ruff format .
 
 format-check: ## Check code formatting without modifying
-	uv run ruff format --check src/ tests/
+	uv run ruff format --check .
 
 type-check: ## Run mypy type checker
 	uv run mypy src/

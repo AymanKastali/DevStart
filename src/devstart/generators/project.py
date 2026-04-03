@@ -110,6 +110,12 @@ def _generate_source_tree(
         root=root,
         created=created,
     )
+    _write_file(
+        src / "py.typed",
+        "",
+        root=root,
+        created=created,
+    )
 
 
 def _generate_tests(
