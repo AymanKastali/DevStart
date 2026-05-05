@@ -11,6 +11,12 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 
+# Coverage
+.coverage
+lcov.info
+coverage.xml
+htmlcov/
+
 # Build artifacts
 dist/
 *.egg-info/

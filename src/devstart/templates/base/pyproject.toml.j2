@@ -42,6 +42,9 @@ strict = true
 module = "tests.*"
 disallow_untyped_defs = false
 
+[tool.bandit]
+exclude_dirs = ["tests"]
+
 [dependency-groups]
 dev = [
     "pytest>=7.0.0",

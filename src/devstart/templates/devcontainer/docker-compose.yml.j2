@@ -4,5 +4,5 @@ services:
     environment:
       UV_LINK_MODE: copy
     volumes:
-      - ..:/workspaces/{{ project_name }}:cached
+      - ..:/workspaces/{{ workspace_dir_name }}:cached
     command: sleep infinity

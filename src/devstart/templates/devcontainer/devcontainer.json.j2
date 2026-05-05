@@ -2,7 +2,7 @@
   "name": "{{ project_name }}",
   "dockerComposeFile": ["docker-compose.yml", "../docker/docker-compose.yml"],
   "service": "devcontainer",
-  "workspaceFolder": "/workspaces/{{ project_name }}",
+  "workspaceFolder": "/workspaces/{{ workspace_dir_name }}",
   "remoteUser": "vscode",
   "updateRemoteUserUID": true,
   "features": {
@@ -17,22 +17,7 @@
       "settings": {
         "python.terminal.useEnvFile": true
       },
-      "extensions": [
-        "ms-python.python",
-        "ms-python.debugpy",
-        "charliermarsh.ruff",
-        "streetsidesoftware.code-spell-checker",
-        "ms-python.mypy-type-checker",
-        "mhutchie.git-graph",
-        "eamodio.gitlens",
-        "tamasfe.even-better-toml",
-        "usernamehw.errorlens",
-        "ms-azuretools.vscode-docker",
-        "jebbs.plantuml",
-        "github.vscode-pull-request-github",
-        "codezombiech.gitignore",
-        "github.vscode-github-actions"
-      ]
+      "extensions": {{ recommended_extensions | tojson(indent=2) | indent(6) }}
     }
   }
 }

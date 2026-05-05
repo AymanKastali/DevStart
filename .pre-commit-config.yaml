@@ -65,7 +65,7 @@ repos:
     hooks:
       - id: pytest
         name: pytest
-        entry: uv run pytest --cov=src/devstart --cov-report=term-missing
+        entry: uv run pytest --cov=src/devstart --cov-report=term-missing --cov-report=lcov:lcov.info
         language: system
         types: [python]
         pass_filenames: false
