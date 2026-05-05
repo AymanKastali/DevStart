@@ -26,3 +26,9 @@ jobs:
         uses: pre-commit/action@v3.0.1
         env:
           SKIP: no-commit-to-branch
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: lcov.info
+          fail_ci_if_error: false

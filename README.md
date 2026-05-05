@@ -3,6 +3,7 @@
 [![PyPI version](https://img.shields.io/pypi/v/devstart)](https://pypi.org/project/devstart/)
 [![Python](https://img.shields.io/pypi/pyversions/devstart)](https://pypi.org/project/devstart/)
 [![License: MIT](https://img.shields.io/pypi/l/devstart)](https://github.com/AymanKastali/DevStart/blob/main/LICENSE)
+[![Coverage](https://codecov.io/gh/AymanKastali/DevStart/branch/main/graph/badge.svg)](https://codecov.io/gh/AymanKastali/DevStart)
 
 **A zero-config Python project scaffolder.** One command, and you get a production-ready project with linting, type checking, tests, Docker, CI, pre-commit hooks, and a dev container — all wired up, all consistent with each other, all ready to use.
 
@@ -14,7 +15,7 @@ Starting a Python project is repetitive and error-prone. You pick a directory la
 
 DevStart does it in one command. The result is a project that:
 
-- Runs `make check` (lint + format + type-check + tests) cleanly the moment it's created.
+- Runs `make check` (the full pre-commit suite: lint + format + type-check + secret scan + security scan + spell check + tests) cleanly the moment it's created.
 - Uses **one source of truth** for tool config (`pyproject.toml`) and **one source of truth** for code-quality checks (`pre-commit`, which CI also runs — no version drift).
 - Follows modern Python packaging conventions: `src/` layout, hatch dynamic versioning, PEP 561 typed marker.
 
@@ -57,7 +58,7 @@ After scaffolding:
 ```bash
 cd myproject
 make setup        # install uv, sync deps, register git hooks
-make check        # lint + format-check + type-check + tests
+make check        # run the full pre-commit suite (canonical quality gate)
 make dev          # run the project: uv run python -m myproject
 ```
 
@@ -138,13 +139,22 @@ myproject/
 | **mypy** | Strict type checking | `pyproject.toml` |
 | **pytest** | Test runner, `src/` layout aware | `pyproject.toml` |
 | **debugpy** | VS Code debugging | `.vscode/launch.json` |
-| **pre-commit** | trailing-whitespace, end-of-file, check-yaml/toml/json/ast, merge-conflict, large-files, debug-statements, detect-private-key, **ruff**, **codespell**, **gitleaks**, **mypy**, **pytest** | `.pre-commit-config.yaml` |
+| **pre-commit** | trailing-whitespace, end-of-file, check-yaml/toml/json/ast, merge-conflict, large-files, debug-statements, detect-private-key, **ruff**, **codespell**, **bandit**, **gitleaks**, **mypy**, **pytest** | `.pre-commit-config.yaml` |
 | **GitHub Actions CI** | Runs `pre-commit/action` on push and PR | `.github/workflows/ci.yml` |
 | **Docker** | App image + dev/prod compose stacks | `docker/` |
 | **Devcontainer** | One-click VS Code container environment | `.devcontainer/` |
 | **PlantUML** | Diagram sources + render targets | `docs/diagrams/`, `Makefile` |
 
 Pre-commit is the single source of truth for code-quality checks; CI just runs it. No version drift between your laptop and the build server.
+
+### Test coverage
+
+`make test-cov` runs pytest with coverage and writes two reports:
+
+- a **terminal summary** (`term-missing`) showing which lines are uncovered, and
+- **`lcov.info`** at the project root, consumed by the [Coverage Gutters](https://marketplace.visualstudio.com/items?itemName=ryanluker.vscode-coverage-gutters) VS Code extension (included in the recommended extensions).
+
+After running it once, open any source file and run **Coverage Gutters: Display Coverage** (or click *Watch* in the status bar) to render covered/uncovered lines in the gutter. `lcov.info` is git-ignored.
 
 ### Makefile targets
 
@@ -169,8 +179,8 @@ Pre-commit is the single source of truth for code-quality checks; CI just runs i
 | `make format-check` | Ruff format check (no changes) |
 | `make type-check` | mypy strict |
 | `make test` | pytest |
-| `make test-cov` | pytest with coverage report |
-| `make check` | Full quality gate: lint + format-check + type-check + test |
+| `make test-cov` | pytest with coverage (terminal report + `lcov.info` for Coverage Gutters) |
+| `make check` | Run the full pre-commit suite (canonical quality gate — same checks CI runs) |
 
 **Docker (dev)**
 | Target | Description |

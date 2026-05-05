@@ -18,12 +18,12 @@ classifiers = [
 devstart = "devstart.cli.main:app"
 
 [project.urls]
-Homepage = "https://github.com/AymanKastali/DevStart"
+Homepage   = "https://github.com/AymanKastali/DevStart"
 Repository = "https://github.com/AymanKastali/DevStart"
-Issues = "https://github.com/AymanKastali/DevStart/issues"
+Issues     = "https://github.com/AymanKastali/DevStart/issues"
 
 [build-system]
-requires = ["hatchling"]
+requires      = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.version]
@@ -33,7 +33,7 @@ path = "src/devstart/__init__.py"
 packages = ["src/devstart"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths  = ["tests"]
 pythonpath = ["src"]
 
 [tool.coverage.run]
@@ -41,8 +41,8 @@ data_file = ".pytest_cache/.coverage"
 
 [tool.ruff]
 target-version = "py314"
-line-length = 88
-src = ["src"]
+line-length    = 88
+src            = ["src"]
 extend-exclude = ["tests"]
 
 [tool.ruff.lint]
@@ -53,7 +53,6 @@ dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
     "ruff>=0.4.0",
-    "bandit[toml]>=1.7.0",
     "pre-commit>=3.7.0",
     "mypy>=1.10.0",
     "codespell>=2.3.0",
@@ -61,12 +60,18 @@ dev = [
 
 [tool.mypy]
 python_version = "3.14"
-strict = true
-exclude = ["tests"]
+strict         = true
+exclude        = ["tests"]
 
 [[tool.mypy.overrides]]
-module = "tests.*"
+module                = "tests.*"
 disallow_untyped_defs = false
 
 [tool.bandit]
 exclude_dirs = ["tests"]
+# B404 (import subprocess) and B603 (subprocess call without shell=True) are
+# advisory rules that fire on any subprocess use. devstart.python_version uses
+# subprocess intentionally to call `uv python find`, with regex-validated
+# input (^\d+\.\d+$) and an absolute path via shutil.which. No injection
+# vector exists; these rules add no signal here.
+skips = ["B404", "B603"]

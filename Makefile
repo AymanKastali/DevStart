@@ -24,7 +24,7 @@ sync: ## Sync all dependency groups
 
 ##@ Quality
 
-.PHONY: lint format format-check type-check test test-cov security check
+.PHONY: lint format format-check type-check test test-cov check
 
 lint: ## Run ruff linter
 	uv run ruff check .
@@ -41,13 +41,11 @@ type-check: ## Run mypy strict type checker
 test: ## Run pytest
 	uv run pytest
 
-test-cov: ## Run pytest with coverage report
-	uv run pytest --cov=src --cov-report=term-missing
+test-cov: ## Run pytest with coverage report (writes lcov.info for Coverage Gutters)
+	uv run pytest --cov=src --cov-report=term-missing --cov-report=lcov:lcov.info
 
-security: ## Run bandit security scan on src/
-	uv run bandit -c pyproject.toml -r src/
-
-check: lint format-check type-check security test ## Full quality gate (lint + format + type + security + test)
+check: ## Run pre-commit on all files (canonical quality gate)
+	uv run pre-commit run --all-files --show-diff-on-failure
 
 ##@ Release
 

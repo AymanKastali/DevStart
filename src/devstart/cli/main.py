@@ -25,6 +25,7 @@ from devstart.defaults import (
 )
 from devstart.generators.project import generate_project
 from devstart.prompts.interactive import prompt_for_config
+from devstart.python_version import resolve_patch_version
 
 _RESERVED_NAMES: set[str] = {
     "__init__",
@@ -65,12 +66,6 @@ def _print_version_and_exit(value: bool) -> None:
     if value:
         console.print(f"[heading]{__app_name__}[/heading] [dim]v{__version__}[/dim]")
         raise typer.Exit()
-
-
-def _exit_with_error(message: str, *, prefix: str = "") -> NoReturn:
-    """Print an error message and exit with code 1."""
-    console.print(f"\n[error]{prefix}✘ {message}[/error]")
-    raise typer.Exit(code=1)
 
 
 @app.callback()
@@ -118,7 +113,7 @@ def new(
     ] = False,
 ) -> None:
     """Create a new Python project with dev tooling pre-configured."""
-    config: ProjectConfig = _build_config(
+    config: ProjectConfig = _resolve_project_config(
         name, description, author, python, no_interactive
     )
     _validate_project_name(config.project_name)
@@ -131,7 +126,7 @@ def new(
 # ── Config building ───────────────────────────────────────────────────────────
 
 
-def _build_config(
+def _resolve_project_config(
     name: str | None,
     description: str | None,
     author: str | None,
@@ -157,31 +152,33 @@ def _build_config(
     else:
         partial_config = prompt_for_config(partial_config)
 
-    return _finalize_config(partial_config, should_use_cwd)
+    return _build_project_config(partial_config, should_use_cwd)
 
 
 def _derive_name_from_cwd() -> tuple[str, bool]:
     """Derive a valid project name from the current directory."""
     cwd: Path = Path.cwd()
-    sanitized: str = _NON_IDENTIFIER_CHARS_PATTERN.sub("_", cwd.name)
-    if not sanitized:
-        sanitized = DEFAULT_PROJECT_NAME
-    elif sanitized[0].isdigit():
-        sanitized = f"_{sanitized}"
-    return sanitized, True
+    sanitized_name: str = _NON_IDENTIFIER_CHARS_PATTERN.sub("_", cwd.name)
+    if not sanitized_name:
+        sanitized_name = DEFAULT_PROJECT_NAME
+    elif sanitized_name[0].isdigit():
+        sanitized_name = f"_{sanitized_name}"
+    return sanitized_name, True
 
 
 def _apply_non_interactive_defaults(
     partial_config: dict[str, str | bool | None],
 ) -> dict[str, str | bool | None]:
-    """Fill missing values with sensible defaults."""
-    partial_config["name"] = partial_config["name"] or DEFAULT_PROJECT_NAME
-    partial_config["description"] = partial_config["description"] or DEFAULT_DESCRIPTION
-    partial_config["author"] = partial_config["author"] or DEFAULT_AUTHOR
-    return partial_config
+    """Return a copy of partial_config with missing values filled by defaults."""
+    return {
+        **partial_config,
+        "name": partial_config["name"] or DEFAULT_PROJECT_NAME,
+        "description": partial_config["description"] or DEFAULT_DESCRIPTION,
+        "author": partial_config["author"] or DEFAULT_AUTHOR,
+    }
 
 
-def _finalize_config(
+def _build_project_config(
     partial_config: dict[str, str | bool | None],
     should_use_cwd: bool,
 ) -> ProjectConfig:
@@ -199,6 +196,7 @@ def _finalize_config(
         description=str(partial_config["description"]),
         author=str(partial_config["author"]),
         python_version=python_version,
+        python_version_full=resolve_patch_version(python_version),
         should_use_cwd=should_use_cwd,
     )
 
@@ -229,12 +227,12 @@ def _validate_project_name(name: str) -> None:
 def _reject_invalid_identifier(name: str) -> None:
     """Exit if name is not a valid Python identifier."""
     if not _VALID_IDENTIFIER_PATTERN.match(name):
-        suggestion: str = _NON_IDENTIFIER_CHARS_PATTERN.sub("_", name)
+        suggested_name: str = _NON_IDENTIFIER_CHARS_PATTERN.sub("_", name)
         _exit_with_error(
             f"Invalid project name '{name}'."
             f" Only letters, digits, and underscores"
             f" are allowed (cannot start with a digit)."
-            f" Hint: try [bold]'{suggestion}'[/bold]."
+            f" Hint: try [bold]'{suggested_name}'[/bold]."
         )
 
 
@@ -338,22 +336,22 @@ def _add_path_to_tree(
 ) -> None:
     """Insert each path component into the tree, reusing existing nodes."""
     current_node: Tree = tree_root
-    parts: tuple[str, ...] = path.parts
-    for index, part in enumerate(parts):
-        path_key: str = "/".join(parts[: index + 1])
+    path_components: tuple[str, ...] = path.parts
+    for index, path_component in enumerate(path_components):
+        path_key: str = "/".join(path_components[: index + 1])
         if path_key not in nodes_by_path_key:
-            is_leaf: bool = index == len(parts) - 1
+            is_leaf: bool = index == len(path_components) - 1
             nodes_by_path_key[path_key] = current_node.add(
-                _format_tree_label(part, is_leaf=is_leaf)
+                _format_tree_label(path_component, is_leaf=is_leaf)
             )
         current_node = nodes_by_path_key[path_key]
 
 
-def _format_tree_label(part: str, *, is_leaf: bool) -> str:
+def _format_tree_label(path_component: str, *, is_leaf: bool) -> str:
     """Return a styled label for a tree node based on whether it is a file."""
     if is_leaf:
-        return f"[green]{part}[/green]"
-    return f"[bold]{part}/[/bold]"
+        return f"[green]{path_component}[/green]"
+    return f"[bold]{path_component}/[/bold]"
 
 
 # ── Output: success panel ─────────────────────────────────────────────────────
@@ -389,3 +387,12 @@ def _format_next_steps(config: ProjectConfig) -> str:
     next_step_lines.append("  [bold]$[/bold] make setup")
     next_step_lines.append(f"  [bold]$[/bold] uv run python -m {config.project_name}")
     return "\n".join(next_step_lines)
+
+
+# ── Errors ───────────────────────────────────────────────────────────────────
+
+
+def _exit_with_error(message: str, *, prefix: str = "") -> NoReturn:
+    """Print an error message and exit with code 1."""
+    console.print(f"\n[error]{prefix}✘ {message}[/error]")
+    raise typer.Exit(code=1)

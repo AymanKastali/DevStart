@@ -26,5 +26,6 @@ def default_config() -> ProjectConfig:
         description="A test project",
         author="Test Author",
         python_version="3.14",
+        python_version_full="3.14.2",
         should_use_cwd=False,
     )

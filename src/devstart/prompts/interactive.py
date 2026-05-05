@@ -16,6 +16,11 @@ from devstart.defaults import (
     SUPPORTED_PYTHON_VERSIONS,
 )
 
+_ESCAPE: str = "\x1b"
+_ARROW_UP: str = "\x1b[A"
+_ARROW_DOWN: str = "\x1b[B"
+_CTRL_C: str = "\x03"
+
 _theme = Theme(
     {
         "heading": "bold bright_blue",
@@ -29,29 +34,30 @@ console = Console(theme=_theme, highlight=False)
 def prompt_for_config(
     config: dict[str, str | bool | None],
 ) -> dict[str, str | bool | None]:
-    """Prompt for any missing configuration values using Rich prompts.
+    """Return a copy of config with any missing values filled via Rich prompts.
 
     Only prompts for values not already provided via CLI flags.
     """
     _print_setup_header()
+    resolved: dict[str, str | bool | None] = dict(config)
 
-    if config.get("name") is None:
-        config["name"] = _prompt_for_text("Project name", DEFAULT_PROJECT_NAME)
+    if resolved.get("name") is None:
+        resolved["name"] = _prompt_for_text("Project name", DEFAULT_PROJECT_NAME)
 
-    if config.get("description") is None:
-        config["description"] = _prompt_for_text(
+    if resolved.get("description") is None:
+        resolved["description"] = _prompt_for_text(
             "Project description", DEFAULT_DESCRIPTION
         )
 
-    if config.get("author") is None:
-        config["author"] = _prompt_for_text("Author name", DEFAULT_AUTHOR)
+    if resolved.get("author") is None:
+        resolved["author"] = _prompt_for_text("Author name", DEFAULT_AUTHOR)
 
-    if config.get("python") is None:
-        config["python"] = _select_with_arrow_keys(
+    if resolved.get("python") is None:
+        resolved["python"] = _select_with_arrow_keys(
             "Python version", SUPPORTED_PYTHON_VERSIONS
         )
 
-    return config
+    return resolved
 
 
 def _print_setup_header() -> None:
@@ -76,7 +82,7 @@ def _select_with_arrow_keys(label: str, options: list[str]) -> str:
     """Display an arrow-key navigable selector and return the chosen value."""
     console.print(f"  [bold]{label}[/bold]  [dim](↑/↓ navigate, Enter select)[/dim]")
     selected_index: int = 0
-    _draw_options(options, selected_index)
+    _draw_option_list(options, selected_index)
 
     saved_terminal_settings = termios.tcgetattr(sys.stdin)
     try:
@@ -94,8 +100,8 @@ def _select_with_arrow_keys(label: str, options: list[str]) -> str:
             else:
                 continue
             termios.tcsetattr(sys.stdin, termios.TCSADRAIN, saved_terminal_settings)
-            _clear_options(len(options))
-            _draw_options(options, selected_index)
+            _clear_option_list(len(options))
+            _draw_option_list(options, selected_index)
             tty.setraw(sys.stdin.fileno())
     finally:
         termios.tcsetattr(sys.stdin, termios.TCSADRAIN, saved_terminal_settings)
@@ -110,14 +116,14 @@ def _keypress_confirms_selection(keypress: str) -> bool:
 
 def _read_keypress() -> str:
     """Read a single keypress, handling multi-byte escape sequences."""
-    char: str = sys.stdin.read(1)
-    if char == _ESCAPE:
-        char += sys.stdin.read(1)
-        char += sys.stdin.read(1)
-    return char
+    keypress_buffer: str = sys.stdin.read(1)
+    if keypress_buffer == _ESCAPE:
+        keypress_buffer += sys.stdin.read(1)
+        keypress_buffer += sys.stdin.read(1)
+    return keypress_buffer
 
 
-def _draw_options(options: list[str], selected_index: int) -> None:
+def _draw_option_list(options: list[str], selected_index: int) -> None:
     """Render the option list with the selected item highlighted."""
     for index, option in enumerate(options):
         if index == selected_index:
@@ -126,17 +132,11 @@ def _draw_options(options: list[str], selected_index: int) -> None:
             console.print(f"      [dim]{option}[/dim]")
 
 
-def _clear_options(option_count: int) -> None:
+def _clear_option_list(option_count: int) -> None:
     """Move cursor up and clear lines to redraw options."""
     for _ in range(option_count):
         sys.stdout.write("\033[A\033[K")
     sys.stdout.flush()
-
-
-_ESCAPE: str = "\x1b"
-_ARROW_UP: str = "\x1b[A"
-_ARROW_DOWN: str = "\x1b[B"
-_CTRL_C: str = "\x03"
 
 
 class _StyledPrompt(Prompt):

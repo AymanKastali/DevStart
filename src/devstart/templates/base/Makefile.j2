@@ -49,10 +49,11 @@ type-check: ## Run mypy strict type checker
 test: ## Run pytest
 	uv run pytest
 
-test-cov: ## Run pytest with coverage report
-	uv run pytest --cov=src/{{ project_name }} --cov-report=term-missing
+test-cov: ## Run pytest with coverage report (writes lcov.info for Coverage Gutters)
+	uv run pytest --cov=src/{{ project_name }} --cov-report=term-missing --cov-report=lcov:lcov.info
 
-check: lint format-check type-check test ## Full quality gate (lint + format-check + type-check + test)
+check: ## Run pre-commit on all files (canonical quality gate)
+	uv run pre-commit run --all-files --show-diff-on-failure
 
 ##@ Docker (dev)
 

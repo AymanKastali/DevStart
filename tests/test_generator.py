@@ -247,7 +247,9 @@ class TestTemplateRendering:
     def test_different_python_version(
         self, tmp_project_dir: Path, default_config: ProjectConfig
     ):
-        config = replace(default_config, python_version="3.13")
+        config = replace(
+            default_config, python_version="3.13", python_version_full="3.13.5"
+        )
         generate_project(config)
         root = tmp_project_dir / "testproject"
         pyproject = (root / "pyproject.toml").read_text()
@@ -350,6 +352,27 @@ class TestGeneratedFileContent:
         assert '"python.testing.pytestEnabled": true' in content
         assert "plantuml.render" in content
         assert "plantuml.server" in content
+        assert '"ruff.importStrategy": "fromEnvironment"' in content
+        assert '"mypy-type-checker.importStrategy": "fromEnvironment"' in content
+
+    def test_devcontainer_uses_recommended_extensions(
+        self, tmp_project_dir: Path, default_config: ProjectConfig
+    ):
+        import json
+        import re
+
+        from devstart.defaults import RECOMMENDED_VSCODE_EXTENSIONS
+
+        generate_project(default_config)
+        root = tmp_project_dir / "testproject"
+        devcontainer_text = (
+            root / ".devcontainer" / "devcontainer.json"
+        ).read_text()
+        match = re.search(
+            r'"extensions":\s*(\[[^\]]*\])', devcontainer_text, re.DOTALL
+        )
+        assert match is not None, "devcontainer.json missing extensions array"
+        assert json.loads(match.group(1)) == RECOMMENDED_VSCODE_EXTENSIONS
 
     def test_devcontainer_extensions(
         self, tmp_project_dir: Path, default_config: ProjectConfig
@@ -412,8 +435,15 @@ class TestGeneratedFileContent:
         assert "COPY pyproject.toml" in content
         assert "COPY README.md" in content
         assert "COPY src/" in content
-        assert "python:3.14-slim" in content
+        assert "python:3.14.2-slim" in content
         assert '"testproject"' in content
+
+    def test_python_version_file_uses_patch(
+        self, tmp_project_dir: Path, default_config: ProjectConfig
+    ):
+        generate_project(default_config)
+        root = tmp_project_dir / "testproject"
+        assert (root / ".python-version").read_text().strip() == "3.14.2"
 
     def test_docker_compose_prod_has_app_service(
         self, tmp_project_dir: Path, default_config: ProjectConfig

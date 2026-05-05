@@ -12,9 +12,10 @@ class ProjectConfig:
     description: str
     author: str
     python_version: str
+    python_version_full: str
     should_use_cwd: bool
 
-    def to_template_context(self) -> dict[str, str | bool]:
+    def to_template_context(self) -> dict[str, str | bool | list[str]]:
         """Return the dict expected by Jinja2 templates."""
         return {
             "project_name": self.project_name,
@@ -22,6 +23,7 @@ class ProjectConfig:
             "description": _escape_toml_string(self.description),
             "author": _escape_toml_string(self.author),
             "python_version": self.python_version,
+            "python_version_full": self.python_version_full,
         }
 
 

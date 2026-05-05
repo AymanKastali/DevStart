@@ -27,7 +27,31 @@ make dev
 make test
 ```
 
-### Lint
+### Test coverage
+
+```bash
+make test-cov
+```
+
+Prints a terminal summary and writes `lcov.info` at the project root. The
+[Coverage Gutters](https://marketplace.visualstudio.com/items?itemName=ryanluker.vscode-coverage-gutters)
+VS Code extension (preinstalled in the devcontainer) reads `lcov.info` and
+highlights covered / uncovered lines in the editor gutter — run **Coverage
+Gutters: Display Coverage** from the command palette, or click *Watch* in the
+status bar.
+
+CI uploads `lcov.info` to [Codecov](https://codecov.io) on every push. To show
+a live coverage badge in this README, sign in at codecov.io with GitHub, enable
+this repo, and add the badge near the top:
+
+```markdown
+[![Coverage](https://codecov.io/gh/<OWNER>/<REPO>/branch/main/graph/badge.svg)](https://codecov.io/gh/<OWNER>/<REPO>)
+```
+
+### Run the full quality gate
+
+`make check` runs the same pre-commit suite CI runs — file hygiene, ruff
+lint + format, codespell, bandit, gitleaks, mypy, and pytest:
 
 ```bash
 make check
