@@ -1,42 +1,36 @@
 .DEFAULT_GOAL := help
 
-# --- Environment ---
+DEV_COMPOSE  := docker compose -f docker/docker-compose.yml
+PROD_COMPOSE := docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml
 
-.PHONY: help ensure-uv setup sync install-shell-completion configure-git
+##@ Help
 
+.PHONY: help
 help: ## Show this help message
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
-		awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
+	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} \
+		/^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2 } \
+		/^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) }' $(MAKEFILE_LIST)
 
-ensure-uv:
+##@ Environment
+
+.PHONY: setup sync
+
+setup: ## Install uv (if missing), sync deps, register git hooks
 	@command -v uv >/dev/null 2>&1 || curl -LsSf https://astral.sh/uv/install.sh | sh
+	uv sync --all-groups
+	@git rev-parse --git-dir >/dev/null 2>&1 && git config core.hooksPath .githooks || true
 
-setup: ensure-uv sync install-shell-completion configure-git ## Set up the full dev environment
-
-sync: ## Sync all dependencies
+sync: ## Sync all dependency groups
 	uv sync --all-groups
 
-install-shell-completion:
-	@dpkg -s bash-completion >/dev/null 2>&1 || \
-		(sudo apt-get update && sudo apt-get install -y bash-completion && sudo rm -rf /var/lib/apt/lists/*)
-	@grep -q 'bash_completion' ~/.bashrc 2>/dev/null || \
-		printf '\nif [ -f /etc/bash_completion ]; then\n  . /etc/bash_completion\nfi\n' >> ~/.bashrc
-
-configure-git:
-	@if command -v git >/dev/null 2>&1; then \
-		git config --global --add safe.directory "$$(pwd)"; \
-		git rev-parse --git-dir >/dev/null 2>&1 || git init -b main; \
-		git config core.hooksPath .githooks; \
-	fi
-
-# --- Development ---
+##@ Application
 
 .PHONY: dev
 
-dev: ## Start the app
+dev: ## Run the application
 	uv run python -m {{ project_name }}
 
-# --- Quality ---
+##@ Quality
 
 .PHONY: lint format format-check type-check test test-cov check
 
@@ -46,67 +40,72 @@ lint: ## Run ruff linter
 format: ## Auto-format code with ruff
 	uv run ruff format .
 
-format-check: ## Check code formatting without modifying
+format-check: ## Verify formatting without modifying files
 	uv run ruff format --check .
 
-type-check: ## Run mypy type checker
-	uv run mypy .
+type-check: ## Run mypy strict type checker
+	uv run mypy src/
 
-test: ## Run tests
+test: ## Run pytest
 	uv run pytest
 
-test-cov: ## Run tests with coverage report
+test-cov: ## Run pytest with coverage report
 	uv run pytest --cov=src/{{ project_name }} --cov-report=term-missing
 
-check: lint format-check type-check test ## Run all checks
+check: lint format-check type-check test ## Full quality gate (lint + format-check + type-check + test)
 
-# --- Docker ---
+##@ Docker (dev)
 
-.PHONY: env-setup infra docker-up docker-build docker-down docker-logs docker-ps
+.PHONY: docker-build docker-up docker-down docker-logs docker-ps docker-restart
 
-COMPOSE      := docker compose -f docker/docker-compose.yml
-COMPOSE_PROD := $(COMPOSE) -f docker/docker-compose.prod.yml
-
-env-setup: ## Create .env from .env.example if it does not exist
+env:
 	@test -f .env || (cp .env.example .env && echo "Created .env from .env.example")
 
-infra: env-setup ## Start infrastructure only
-	$(COMPOSE) up -d
+docker-build: env ## Build dev images
+	$(DEV_COMPOSE) build
 
-docker-up: env-setup ## Start app + infrastructure (detached)
-	$(COMPOSE_PROD) up -d
+docker-up: env ## Start the dev stack (detached)
+	$(DEV_COMPOSE) up -d
 
-docker-build: env-setup ## Build and start app + infrastructure
-	$(COMPOSE_PROD) up --build -d
+docker-down: ## Stop and remove dev containers
+	$(DEV_COMPOSE) down
 
-docker-down: ## Stop and remove containers
-	$(COMPOSE_PROD) down
+docker-logs: ## Tail dev stack logs
+	$(DEV_COMPOSE) logs -f
 
-docker-logs: ## Tail logs for all services
-	$(COMPOSE_PROD) logs -f
+docker-ps: ## List dev stack containers
+	$(DEV_COMPOSE) ps
 
-docker-ps: ## Show running service status
-	$(COMPOSE_PROD) ps
+docker-restart: docker-down docker-up ## Restart the dev stack
 
-# --- Release ---
+##@ Docker (prod)
 
-.PHONY: release release-patch release-minor release-major
+.PHONY: docker-up-prod docker-down-prod docker-logs-prod
 
-release: ## Tag and push a release (use: make release V=1.0.0)
-	@test -n "$(V)" || (echo "Usage: make release V=1.0.0" && exit 1)
-	git tag -a "v$(V)" -m "Release v$(V)"
-	git push origin "v$(V)"
+docker-up-prod: env ## Start the prod stack (detached, with --build)
+	$(PROD_COMPOSE) up -d --build
 
-release-patch: ## Bump patch version and release
-	@$(MAKE) release V=$(V)
+docker-down-prod: ## Stop and remove prod containers
+	$(PROD_COMPOSE) down
 
-release-minor: ## Bump minor version and release
-	@$(MAKE) release V=$(V)
+docker-logs-prod: ## Tail prod stack logs
+	$(PROD_COMPOSE) logs -f
 
-release-major: ## Bump major version and release
-	@$(MAKE) release V=$(V)
+##@ Release
 
-# --- Diagrams ---
+.PHONY: tag release
+
+tag: ## Create annotated git tag (VERSION=x.y.z)
+	@test -n "$(VERSION)" || (echo "ERROR: pass VERSION=x.y.z (e.g. make tag VERSION=0.1.0)" && exit 1)
+	git tag -a "v$(VERSION)" -m "Release v$(VERSION)"
+	@echo "Tagged v$(VERSION). Run 'git push origin v$(VERSION)' to publish."
+
+release: ## Tag and push a release (VERSION=x.y.z)
+	@test -n "$(VERSION)" || (echo "ERROR: pass VERSION=x.y.z (e.g. make release VERSION=0.1.0)" && exit 1)
+	git tag -a "v$(VERSION)" -m "Release v$(VERSION)"
+	git push origin "v$(VERSION)"
+
+##@ Diagrams
 
 .PHONY: diagrams diagrams-svg diagrams-clean
 
@@ -119,11 +118,11 @@ diagrams-svg: ## Render PlantUML diagrams to SVG
 diagrams-clean: ## Remove rendered diagram images
 	rm -f docs/diagrams/*.png docs/diagrams/*.svg
 
-# --- Cleanup ---
+##@ Cleanup
 
 .PHONY: clean
 
-clean: ## Remove build artifacts and caches
-	rm -rf dist/ build/ .venv/ .ruff_cache/ .pytest_cache/ .mypy_cache/
+clean: ## Remove build artifacts, caches, and .venv/
+	rm -rf dist/ build/ .venv/ .ruff_cache/ .pytest_cache/ .mypy_cache/ .coverage htmlcov/
 	find . -type d -name __pycache__ -exec rm -rf {} +
 	find . -type f -name "*.pyc" -delete

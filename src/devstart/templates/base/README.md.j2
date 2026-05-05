@@ -35,27 +35,26 @@ make check
 
 ## Docker
 
-Start infrastructure only:
+Dev stack:
 
 ```bash
-make infra
+make docker-up        # start (detached)
+make docker-logs      # tail logs
+make docker-down      # stop and remove
 ```
 
-Start app + infrastructure:
+Prod stack (applies `docker-compose.prod.yml` overrides):
 
 ```bash
-make docker-up
+make docker-up-prod
+make docker-down-prod
 ```
 
-Build and start:
-
-```bash
-make docker-build
-```
+Run `make help` to see every target.
 
 ## Diagrams
 
-PlantUML architecture and design diagrams are in `docs/diagrams/`. Render to PNG:
+PlantUML diagrams live in `docs/diagrams/`. Render to PNG:
 
 ```bash
 make diagrams
@@ -66,7 +65,7 @@ make diagrams
 Tag and push a release:
 
 ```bash
-make release V=1.0.0
+make release VERSION=1.0.0
 ```
 
 ---

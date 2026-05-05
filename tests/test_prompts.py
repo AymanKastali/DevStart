@@ -12,7 +12,7 @@ from devstart.prompts.interactive import prompt_for_config
 
 class TestPromptSkipsProvidedValues:
     @patch("devstart.prompts.interactive._StyledPrompt.ask")
-    @patch("devstart.prompts.interactive._select_from_list")
+    @patch("devstart.prompts.interactive._select_with_arrow_keys")
     def test_no_prompts_when_all_values_provided(self, mock_select, mock_prompt):
         config: dict[str, str | bool | None] = {
             "name": "myapp",
@@ -25,7 +25,7 @@ class TestPromptSkipsProvidedValues:
         mock_select.assert_not_called()
         assert result["name"] == "myapp"
 
-    @patch("devstart.prompts.interactive._select_from_list")
+    @patch("devstart.prompts.interactive._select_with_arrow_keys")
     @patch(
         "devstart.prompts.interactive._StyledPrompt.ask",
         return_value="prompted_value",
@@ -45,7 +45,7 @@ class TestPromptSkipsProvidedValues:
 
 class TestPromptDefaults:
     @patch(
-        "devstart.prompts.interactive._select_from_list",
+        "devstart.prompts.interactive._select_with_arrow_keys",
         return_value="3.14",
     )
     @patch("devstart.prompts.interactive._StyledPrompt.ask")
@@ -78,7 +78,7 @@ class TestPromptDefaults:
 
 class TestPythonVersionSelector:
     @patch(
-        "devstart.prompts.interactive._select_from_list",
+        "devstart.prompts.interactive._select_with_arrow_keys",
         return_value="3.13",
     )
     def test_python_version_selected_via_dropdown(self, mock_select):
@@ -93,7 +93,7 @@ class TestPythonVersionSelector:
         mock_select.assert_called_once()
 
     def test_python_version_skipped_when_provided(self):
-        with patch("devstart.prompts.interactive._select_from_list") as mock_select:
+        with patch("devstart.prompts.interactive._select_with_arrow_keys") as mock_select:
             config: dict[str, str | bool | None] = {
                 "name": "myapp",
                 "description": "desc",

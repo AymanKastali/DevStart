@@ -175,7 +175,7 @@ class TestTemplateRendering:
         root = tmp_project_dir / "testproject"
         content = (root / "README.md").read_text()
         assert "## Release" in content
-        assert "make release V=1.0.0" in content
+        assert "make release VERSION=1.0.0" in content
 
     def test_readme_docker_commands(
         self, tmp_project_dir: Path, default_config: ProjectConfig
@@ -183,9 +183,9 @@ class TestTemplateRendering:
         generate_project(default_config)
         root = tmp_project_dir / "testproject"
         content = (root / "README.md").read_text()
-        assert "make infra" in content
         assert "make docker-up" in content
-        assert "make docker-build" in content
+        assert "make docker-up-prod" in content
+        assert "make docker-down" in content
 
     def test_vscode_launch_json(
         self, tmp_project_dir: Path, default_config: ProjectConfig
@@ -282,8 +282,8 @@ class TestTemplateRendering:
         assert "docker-build:" in content
         assert "docker-logs:" in content
         assert "docker-ps:" in content
-        assert "infra:" in content
-        assert "env-setup:" in content
+        assert "docker-up-prod:" in content
+        assert "docker-down-prod:" in content
 
     def test_makefile_diagrams_targets(
         self, tmp_project_dir: Path, default_config: ProjectConfig
@@ -302,9 +302,7 @@ class TestTemplateRendering:
         root = tmp_project_dir / "testproject"
         content = (root / "Makefile").read_text()
         assert "release:" in content
-        assert "release-patch:" in content
-        assert "release-minor:" in content
-        assert "release-major:" in content
+        assert "tag:" in content
 
 
 class TestScaffoldIntoCwd:

@@ -22,6 +22,7 @@ def default_config() -> ProjectConfig:
     """Return a default project configuration."""
     return ProjectConfig(
         project_name="testproject",
+        workspace_dir_name="testproject",
         description="A test project",
         author="Test Author",
         python_version="3.14",

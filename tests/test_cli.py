@@ -159,6 +159,20 @@ class TestScaffoldIntoCwd:
         result = runner.invoke(app, ["new", ".", "--python", "3.14", "-y"])
         assert result.exit_code == 1
 
+    def test_new_dot_hyphenated_directory_keeps_dir_name_in_devcontainer(
+        self, tmp_project_dir: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        hyphen_dir = tmp_project_dir / "test-proj"
+        hyphen_dir.mkdir()
+        monkeypatch.chdir(hyphen_dir)
+        result = runner.invoke(app, ["new", ".", "--python", "3.14", "-y"])
+        assert result.exit_code == 0
+        assert (hyphen_dir / "src" / "test_proj" / "main.py").is_file()
+        devcontainer = (hyphen_dir / ".devcontainer" / "devcontainer.json").read_text()
+        assert '"workspaceFolder": "/workspaces/test-proj"' in devcontainer
+        compose = (hyphen_dir / ".devcontainer" / "docker-compose.yml").read_text()
+        assert "/workspaces/test-proj" in compose
+
 
 class TestExistingDirectory:
     def test_existing_directory_fails(self, tmp_project_dir: Path):

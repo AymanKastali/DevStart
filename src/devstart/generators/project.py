@@ -16,10 +16,345 @@ TEMPLATE_ENV = Environment(
 )
 
 
-def _render(template_path: str, context: dict[str, str | bool]) -> str:
+def generate_project(config: ProjectConfig) -> list[Path]:
+    """Generate a complete Python project with dev tooling.
+
+    Returns:
+        List of relative paths to all created files.
+    """
+    project_root: Path = _resolve_project_root(config)
+    package_root: Path = project_root / "src" / config.project_name
+    template_context: dict[str, str | bool] = config.to_template_context()
+    created_paths: list[Path] = []
+
+    _generate_source_tree(
+        package_root, template_context, root=project_root, created=created_paths
+    )
+    _generate_tests(project_root, template_context, created=created_paths)
+    _generate_root_files(project_root, template_context, created=created_paths)
+    _generate_vscode(project_root, template_context, created=created_paths)
+    _generate_docker(project_root, template_context, created=created_paths)
+    _generate_ci(project_root, template_context, created=created_paths)
+    _generate_devcontainer(project_root, template_context, created=created_paths)
+    _generate_precommit(project_root, template_context, created=created_paths)
+    _generate_diagrams(project_root, template_context, created=created_paths)
+
+    return created_paths
+
+
+def _resolve_project_root(config: ProjectConfig) -> Path:
+    """Determine and validate the project root directory."""
+    if config.should_use_cwd:
+        return _resolve_cwd_as_project_root()
+    return _resolve_named_subdirectory_as_project_root(config.project_name)
+
+
+def _resolve_cwd_as_project_root() -> Path:
+    """Use the current directory as the root, requiring it to be empty."""
+    cwd: Path = Path.cwd()
+    if _directory_has_user_content(cwd):
+        raise FileExistsError(
+            f"Current directory '{cwd}' is not empty. "
+            "Use '.' only in an empty directory."
+        )
+    return cwd
+
+
+def _resolve_named_subdirectory_as_project_root(project_name: str) -> Path:
+    """Use a new subdirectory of cwd as the root, requiring it not to exist."""
+    project_root: Path = Path.cwd() / project_name
+    if project_root.exists():
+        raise FileExistsError(
+            f"Directory '{project_name}' already exists. "
+            "Remove it or choose a different name."
+        )
+    return project_root
+
+
+def _directory_has_user_content(directory: Path) -> bool:
+    """Return True if the directory contains anything other than a .git folder."""
+    return any(entry for entry in directory.iterdir() if entry.name != ".git")
+
+
+def _generate_source_tree(
+    package_root: Path,
+    template_context: dict[str, str | bool],
+    *,
+    root: Path,
+    created: list[Path],
+) -> None:
+    """Generate the src/<project>/ directory tree."""
+    _render_template_to_file(
+        package_root / "__init__.py",
+        "base/init.py.j2",
+        template_context,
+        root=root,
+        created=created,
+    )
+    _render_template_to_file(
+        package_root / "__main__.py",
+        "base/__main__.py.j2",
+        template_context,
+        root=root,
+        created=created,
+    )
+    _render_template_to_file(
+        package_root / "main.py",
+        "base/main.py.j2",
+        template_context,
+        root=root,
+        created=created,
+    )
+    _write_file(package_root / "py.typed", "", root=root, created=created)
+
+
+def _generate_tests(
+    root: Path,
+    template_context: dict[str, str | bool],
+    *,
+    created: list[Path],
+) -> None:
+    """Generate the test directory structure."""
+    tests_dir: Path = root / "tests"
+    _write_empty_init(tests_dir, root=root, created=created)
+    _render_template_to_file(
+        tests_dir / "conftest.py",
+        "base/conftest.py.j2",
+        template_context,
+        root=root,
+        created=created,
+    )
+    _render_template_to_file(
+        tests_dir / "test_main.py",
+        "base/test_main.py.j2",
+        template_context,
+        root=root,
+        created=created,
+    )
+
+
+def _generate_root_files(
+    root: Path,
+    template_context: dict[str, str | bool],
+    *,
+    created: list[Path],
+) -> None:
+    """Generate root-level project files."""
+    _render_template_to_file(
+        root / "pyproject.toml",
+        "base/pyproject.toml.j2",
+        template_context,
+        root=root,
+        created=created,
+    )
+    _render_template_to_file(
+        root / "README.md",
+        "base/README.md.j2",
+        template_context,
+        root=root,
+        created=created,
+    )
+    _render_template_to_file(
+        root / ".gitignore",
+        "base/gitignore.j2",
+        template_context,
+        root=root,
+        created=created,
+    )
+    _render_template_to_file(
+        root / "Makefile",
+        "base/Makefile.j2",
+        template_context,
+        root=root,
+        created=created,
+    )
+    _render_template_to_file(
+        root / ".env",
+        "base/env.j2",
+        template_context,
+        root=root,
+        created=created,
+    )
+    _render_template_to_file(
+        root / ".env.example",
+        "base/env.example.j2",
+        template_context,
+        root=root,
+        created=created,
+    )
+    _render_template_to_file(
+        root / ".python-version",
+        "base/python-version.j2",
+        template_context,
+        root=root,
+        created=created,
+    )
+
+
+def _generate_vscode(
+    root: Path,
+    template_context: dict[str, str | bool],
+    *,
+    created: list[Path],
+) -> None:
+    """Generate .vscode configuration files."""
+    vscode_dir: Path = root / ".vscode"
+    _render_template_to_file(
+        vscode_dir / "launch.json",
+        "base/vscode_launch.json.j2",
+        template_context,
+        root=root,
+        created=created,
+    )
+    _render_template_to_file(
+        vscode_dir / "settings.json",
+        "base/vscode_settings.json.j2",
+        template_context,
+        root=root,
+        created=created,
+    )
+
+
+def _generate_docker(
+    root: Path,
+    template_context: dict[str, str | bool],
+    *,
+    created: list[Path],
+) -> None:
+    """Generate Docker and Docker Compose files."""
+    docker_dir: Path = root / "docker"
+    _render_template_to_file(
+        docker_dir / "Dockerfile",
+        "docker/Dockerfile.j2",
+        template_context,
+        root=root,
+        created=created,
+    )
+    _render_template_to_file(
+        docker_dir / "docker-compose.yml",
+        "docker/docker-compose.yml.j2",
+        template_context,
+        root=root,
+        created=created,
+    )
+    _render_template_to_file(
+        docker_dir / "docker-compose.prod.yml",
+        "docker/docker-compose.prod.yml.j2",
+        template_context,
+        root=root,
+        created=created,
+    )
+    _render_template_to_file(
+        root / ".dockerignore",
+        "docker/dockerignore.j2",
+        template_context,
+        root=root,
+        created=created,
+    )
+
+
+def _generate_ci(
+    root: Path,
+    template_context: dict[str, str | bool],
+    *,
+    created: list[Path],
+) -> None:
+    """Generate GitHub Actions CI workflow."""
+    workflows_dir: Path = root / ".github" / "workflows"
+    _render_template_to_file(
+        workflows_dir / "ci.yml",
+        "ci/ci.yml.j2",
+        template_context,
+        root=root,
+        created=created,
+    )
+
+
+def _generate_devcontainer(
+    root: Path,
+    template_context: dict[str, str | bool],
+    *,
+    created: list[Path],
+) -> None:
+    """Generate devcontainer configuration."""
+    devcontainer_dir: Path = root / ".devcontainer"
+    _render_template_to_file(
+        devcontainer_dir / "devcontainer.json",
+        "devcontainer/devcontainer.json.j2",
+        template_context,
+        root=root,
+        created=created,
+    )
+    _render_template_to_file(
+        devcontainer_dir / "docker-compose.yml",
+        "devcontainer/docker-compose.yml.j2",
+        template_context,
+        root=root,
+        created=created,
+    )
+
+
+def _generate_precommit(
+    root: Path,
+    template_context: dict[str, str | bool],
+    *,
+    created: list[Path],
+) -> None:
+    """Generate pre-commit configuration and the executable git hook wrapper."""
+    _render_template_to_file(
+        root / ".pre-commit-config.yaml",
+        "precommit/pre-commit-config.yaml.j2",
+        template_context,
+        root=root,
+        created=created,
+    )
+    hook_path: Path = root / ".githooks" / "pre-commit"
+    _render_template_to_file(
+        hook_path,
+        "precommit/pre-commit-hook.j2",
+        template_context,
+        root=root,
+        created=created,
+    )
+    _make_file_executable(hook_path)
+
+
+def _generate_diagrams(
+    root: Path,
+    template_context: dict[str, str | bool],
+    *,
+    created: list[Path],
+) -> None:
+    """Generate PlantUML diagram templates."""
+    diagrams_dir: Path = root / "docs" / "diagrams"
+    _render_template_to_file(
+        diagrams_dir / "class_diagram.puml",
+        "diagrams/class_diagram.puml.j2",
+        template_context,
+        root=root,
+        created=created,
+    )
+
+
+def _render_template_to_file(
+    destination: Path,
+    template_path: str,
+    template_context: dict[str, str | bool],
+    *,
+    root: Path,
+    created: list[Path],
+) -> None:
+    """Render a Jinja2 template and write the result to a file."""
+    rendered: str = _render_template(template_path, template_context)
+    _write_file(destination, rendered, root=root, created=created)
+
+
+def _render_template(
+    template_path: str, template_context: dict[str, str | bool]
+) -> str:
     """Render a Jinja2 template with the given context."""
     template = TEMPLATE_ENV.get_template(template_path)
-    return template.render(**context)
+    return template.render(**template_context)
 
 
 def _write_file(
@@ -35,294 +370,11 @@ def _write_file(
     created.append(path.relative_to(root))
 
 
-def _write_init(path: Path, *, root: Path, created: list[Path]) -> None:
-    """Write an empty __init__.py file."""
-    _write_file(path / "__init__.py", "", root=root, created=created)
+def _write_empty_init(directory: Path, *, root: Path, created: list[Path]) -> None:
+    """Write an empty __init__.py file inside the given directory."""
+    _write_file(directory / "__init__.py", "", root=root, created=created)
 
 
-def generate_project(config: ProjectConfig) -> list[Path]:
-    """Generate a complete Python project with dev tooling.
-
-    Returns:
-        List of relative paths to all created files.
-    """
-    root: Path = _resolve_project_root(config)
-    src: Path = root / "src" / config.project_name
-    created: list[Path] = []
-    context: dict[str, str | bool] = config.to_template_context()
-
-    _generate_source_tree(src, context, root=root, created=created)
-    _generate_tests(root, context, created=created)
-    _generate_root_files(root, context, created=created)
-    _generate_vscode(root, context, created=created)
-    _generate_docker(root, context, created=created)
-    _generate_ci(root, context, created=created)
-    _generate_devcontainer(root, context, created=created)
-    _generate_precommit(root, context, created=created)
-    _generate_diagrams(root, context, created=created)
-
-    return created
-
-
-def _resolve_project_root(config: ProjectConfig) -> Path:
-    """Determine and validate the project root directory."""
-    if config.should_use_cwd:
-        root: Path = Path.cwd()
-        if any(p for p in root.iterdir() if p.name != ".git"):
-            raise FileExistsError(
-                f"Current directory '{root}' is not empty. "
-                "Use '.' only in an empty directory."
-            )
-        return root
-
-    root = Path.cwd() / config.project_name
-    if root.exists():
-        raise FileExistsError(
-            f"Directory '{config.project_name}' already exists. "
-            "Remove it or choose a different name."
-        )
-    return root
-
-
-def _generate_source_tree(
-    src: Path,
-    context: dict[str, str | bool],
-    *,
-    root: Path,
-    created: list[Path],
-) -> None:
-    """Generate the src/<project>/ directory tree."""
-    _write_file(
-        src / "__init__.py",
-        _render("base/init.py.j2", context),
-        root=root,
-        created=created,
-    )
-    _write_file(
-        src / "__main__.py",
-        _render("base/__main__.py.j2", context),
-        root=root,
-        created=created,
-    )
-    _write_file(
-        src / "main.py",
-        _render("base/main.py.j2", context),
-        root=root,
-        created=created,
-    )
-    _write_file(
-        src / "py.typed",
-        "",
-        root=root,
-        created=created,
-    )
-
-
-def _generate_tests(
-    root: Path,
-    context: dict[str, str | bool],
-    *,
-    created: list[Path],
-) -> None:
-    """Generate the test directory structure."""
-    tests: Path = root / "tests"
-
-    _write_init(tests, root=root, created=created)
-    _write_file(
-        tests / "conftest.py",
-        _render("base/conftest.py.j2", context),
-        root=root,
-        created=created,
-    )
-    _write_file(
-        tests / "test_main.py",
-        _render("base/test_main.py.j2", context),
-        root=root,
-        created=created,
-    )
-
-
-def _generate_root_files(
-    root: Path,
-    context: dict[str, str | bool],
-    *,
-    created: list[Path],
-) -> None:
-    """Generate root-level project files."""
-    _write_file(
-        root / "pyproject.toml",
-        _render("base/pyproject.toml.j2", context),
-        root=root,
-        created=created,
-    )
-    _write_file(
-        root / "README.md",
-        _render("base/README.md.j2", context),
-        root=root,
-        created=created,
-    )
-    _write_file(
-        root / ".gitignore",
-        _render("base/gitignore.j2", context),
-        root=root,
-        created=created,
-    )
-    _write_file(
-        root / "Makefile",
-        _render("base/Makefile.j2", context),
-        root=root,
-        created=created,
-    )
-    _write_file(
-        root / ".env",
-        _render("base/env.j2", context),
-        root=root,
-        created=created,
-    )
-    _write_file(
-        root / ".env.example",
-        _render("base/env.example.j2", context),
-        root=root,
-        created=created,
-    )
-    _write_file(
-        root / ".python-version",
-        _render("base/python-version.j2", context),
-        root=root,
-        created=created,
-    )
-
-
-def _generate_vscode(
-    root: Path,
-    context: dict[str, str | bool],
-    *,
-    created: list[Path],
-) -> None:
-    """Generate .vscode configuration files."""
-    vscode: Path = root / ".vscode"
-    _write_file(
-        vscode / "launch.json",
-        _render("base/vscode_launch.json.j2", context),
-        root=root,
-        created=created,
-    )
-    _write_file(
-        vscode / "settings.json",
-        _render("base/vscode_settings.json.j2", context),
-        root=root,
-        created=created,
-    )
-
-
-def _generate_docker(
-    root: Path,
-    context: dict[str, str | bool],
-    *,
-    created: list[Path],
-) -> None:
-    """Generate Docker and Docker Compose files."""
-    docker: Path = root / "docker"
-    _write_file(
-        docker / "Dockerfile",
-        _render("docker/Dockerfile.j2", context),
-        root=root,
-        created=created,
-    )
-    _write_file(
-        docker / "docker-compose.yml",
-        _render("docker/docker-compose.yml.j2", context),
-        root=root,
-        created=created,
-    )
-    _write_file(
-        docker / "docker-compose.prod.yml",
-        _render("docker/docker-compose.prod.yml.j2", context),
-        root=root,
-        created=created,
-    )
-    _write_file(
-        root / ".dockerignore",
-        _render("docker/dockerignore.j2", context),
-        root=root,
-        created=created,
-    )
-
-
-def _generate_ci(
-    root: Path,
-    context: dict[str, str | bool],
-    *,
-    created: list[Path],
-) -> None:
-    """Generate GitHub Actions CI workflow."""
-    ci_dir: Path = root / ".github" / "workflows"
-    _write_file(
-        ci_dir / "ci.yml",
-        _render("ci/ci.yml.j2", context),
-        root=root,
-        created=created,
-    )
-
-
-def _generate_devcontainer(
-    root: Path,
-    context: dict[str, str | bool],
-    *,
-    created: list[Path],
-) -> None:
-    """Generate devcontainer configuration."""
-    devcontainer: Path = root / ".devcontainer"
-    _write_file(
-        devcontainer / "devcontainer.json",
-        _render("devcontainer/devcontainer.json.j2", context),
-        root=root,
-        created=created,
-    )
-    _write_file(
-        devcontainer / "docker-compose.yml",
-        _render("devcontainer/docker-compose.yml.j2", context),
-        root=root,
-        created=created,
-    )
-
-
-def _generate_precommit(
-    root: Path,
-    context: dict[str, str | bool],
-    *,
-    created: list[Path],
-) -> None:
-    """Generate pre-commit configuration and git hook wrapper."""
-    _write_file(
-        root / ".pre-commit-config.yaml",
-        _render("precommit/pre-commit-config.yaml.j2", context),
-        root=root,
-        created=created,
-    )
-    hook_path: Path = root / ".githooks" / "pre-commit"
-    _write_file(
-        hook_path,
-        _render("precommit/pre-commit-hook.j2", context),
-        root=root,
-        created=created,
-    )
-    hook_path.chmod(
-        hook_path.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
-    )
-
-
-def _generate_diagrams(
-    root: Path,
-    context: dict[str, str | bool],
-    *,
-    created: list[Path],
-) -> None:
-    """Generate PlantUML diagram templates."""
-    diagrams: Path = root / "docs" / "diagrams"
-    _write_file(
-        diagrams / "class_diagram.puml",
-        _render("diagrams/class_diagram.puml.j2", context),
-        root=root,
-        created=created,
-    )
+def _make_file_executable(path: Path) -> None:
+    """Add user/group/other execute bits to an existing file."""
+    path.chmod(path.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
