@@ -39,6 +39,8 @@ _RESERVED_NAMES: set[str] = {
 
 _VALID_IDENTIFIER_PATTERN: re.Pattern[str] = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]*$")
 _NON_IDENTIFIER_CHARS_PATTERN: re.Pattern[str] = re.compile(r"[^a-zA-Z0-9_]")
+_GITHUB_NAME_PATTERN: re.Pattern[str] = re.compile(r"^[a-zA-Z0-9._-]+$")
+_GITHUB_NAME_MAX_LENGTH: int = 100
 
 _theme = Theme(
     {
@@ -119,7 +121,7 @@ def new(
     _validate_project_name(config.project_name)
     _print_config_summary(config)
     created_paths: list[Path] = _generate_with_spinner(config)
-    _print_file_tree(config.project_name, created_paths)
+    _print_file_tree(config.workspace_dir_name, created_paths)
     _print_success(config)
 
 
@@ -156,14 +158,41 @@ def _resolve_project_config(
 
 
 def _derive_name_from_cwd() -> tuple[str, bool]:
-    """Derive a valid project name from the current directory."""
-    cwd: Path = Path.cwd()
-    sanitized_name: str = _NON_IDENTIFIER_CHARS_PATTERN.sub("_", cwd.name)
+    """Return the current directory name verbatim (validated/normalized later)."""
+    return Path.cwd().name, True
+
+
+def _normalize_to_package_name(raw_name: str) -> str:
+    """Convert a GitHub-valid name into a lowercase Python package identifier."""
+    sanitized_name: str = _NON_IDENTIFIER_CHARS_PATTERN.sub("_", raw_name).lower()
     if not sanitized_name:
-        sanitized_name = DEFAULT_PROJECT_NAME
-    elif sanitized_name[0].isdigit():
-        sanitized_name = f"_{sanitized_name}"
-    return sanitized_name, True
+        return DEFAULT_PROJECT_NAME
+    if sanitized_name[0].isdigit():
+        return f"_{sanitized_name}"
+    return sanitized_name
+
+
+def _validate_workspace_dir_name(name: str, *, is_cwd: bool) -> None:
+    """Exit if name is not a valid GitHub-compatible directory name."""
+    if (
+        not name
+        or len(name) > _GITHUB_NAME_MAX_LENGTH
+        or name in {".", ".."}
+        or not _GITHUB_NAME_PATTERN.match(name)
+    ):
+        if is_cwd:
+            _exit_with_error(
+                f"Current directory '{name}' is not a valid project root."
+                f" Rename it to use only letters, digits, hyphens,"
+                f" underscores, or periods (max {_GITHUB_NAME_MAX_LENGTH}"
+                f" chars), then re-run."
+            )
+        _exit_with_error(
+            f"Invalid project name '{name}'."
+            f" Use only letters, digits, hyphens, underscores,"
+            f" or periods (GitHub-compatible, max"
+            f" {_GITHUB_NAME_MAX_LENGTH} chars)."
+        )
 
 
 def _apply_non_interactive_defaults(
@@ -183,13 +212,15 @@ def _build_project_config(
     should_use_cwd: bool,
 ) -> ProjectConfig:
     """Build a ProjectConfig from a fully-populated partial dict."""
-    project_name: str = _require_string_field(
+    raw_name: str = _require_string_field(
         partial_config, "name", "Project name is required."
     )
+    _validate_workspace_dir_name(raw_name, is_cwd=should_use_cwd)
     python_version: str = _require_string_field(
         partial_config, "python", "Python version is required (use --python)."
     )
-    workspace_dir_name: str = Path.cwd().name if should_use_cwd else project_name
+    project_name: str = _normalize_to_package_name(raw_name)
+    workspace_dir_name: str = raw_name
     return ProjectConfig(
         project_name=project_name,
         workspace_dir_name=workspace_dir_name,
@@ -309,18 +340,18 @@ def _generate_with_spinner(config: ProjectConfig) -> list[Path]:
 # ── Output: file tree ─────────────────────────────────────────────────────────
 
 
-def _print_file_tree(project_name: str, created_paths: list[Path]) -> None:
+def _print_file_tree(root_label: str, created_paths: list[Path]) -> None:
     """Print a Rich tree of all generated files."""
     console.print()
     console.rule("[heading]Project Structure[/heading]")
     console.print()
-    console.print(_build_file_tree(project_name, created_paths))
+    console.print(_build_file_tree(root_label, created_paths))
 
 
-def _build_file_tree(project_name: str, created_paths: list[Path]) -> Tree:
+def _build_file_tree(root_label: str, created_paths: list[Path]) -> Tree:
     """Build a Rich Tree representation of all created paths."""
     tree = Tree(
-        f"[bold bright_blue]{project_name}/[/bold bright_blue]",
+        f"[bold bright_blue]{root_label}/[/bold bright_blue]",
         guide_style="bright_blue",
     )
     nodes_by_path_key: dict[str, Tree] = {}
@@ -383,7 +414,7 @@ def _format_next_steps(config: ProjectConfig) -> str:
     """Return the indented, newline-joined list of next-step shell commands."""
     next_step_lines: list[str] = []
     if not config.should_use_cwd:
-        next_step_lines.append(f"  [bold]$[/bold] cd {config.project_name}")
+        next_step_lines.append(f"  [bold]$[/bold] cd {config.workspace_dir_name}")
     next_step_lines.append("  [bold]$[/bold] make setup")
     next_step_lines.append(f"  [bold]$[/bold] uv run python -m {config.project_name}")
     return "\n".join(next_step_lines)
