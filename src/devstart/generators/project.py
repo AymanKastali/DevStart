@@ -54,7 +54,7 @@ def _resolve_project_root(config: ProjectConfig) -> Path:
     """Determine and validate the project root directory."""
     if config.should_use_cwd:
         return _resolve_cwd_as_project_root()
-    return _resolve_named_subdirectory_as_project_root(config.project_name)
+    return _resolve_named_subdirectory_as_project_root(config.workspace_dir_name)
 
 
 def _resolve_cwd_as_project_root() -> Path:
@@ -68,12 +68,12 @@ def _resolve_cwd_as_project_root() -> Path:
     return cwd
 
 
-def _resolve_named_subdirectory_as_project_root(project_name: str) -> Path:
+def _resolve_named_subdirectory_as_project_root(dir_name: str) -> Path:
     """Use a new subdirectory of cwd as the root, requiring it not to exist."""
-    project_root: Path = Path.cwd() / project_name
+    project_root: Path = Path.cwd() / dir_name
     if project_root.exists():
         raise FileExistsError(
-            f"Directory '{project_name}' already exists. "
+            f"Directory '{dir_name}' already exists. "
             "Remove it or choose a different name."
         )
     return project_root

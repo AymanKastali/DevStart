@@ -77,16 +77,25 @@ class TestNewWithFlags:
 
 
 class TestProjectNameValidation:
-    def test_invalid_name_starts_with_digit(self, tmp_project_dir: Path):
+    def test_digit_starting_name_is_normalized(self, tmp_project_dir: Path):
         result = runner.invoke(app, ["new", "123bad", "--python", "3.14", "-y"])
-        assert result.exit_code == 1
+        assert result.exit_code == 0
+        assert (tmp_project_dir / "123bad" / "src" / "_123bad" / "main.py").is_file()
 
-    def test_invalid_name_has_hyphen(self, tmp_project_dir: Path):
+    def test_hyphenated_name_is_normalized(self, tmp_project_dir: Path):
         result = runner.invoke(app, ["new", "my-project", "--python", "3.14", "-y"])
+        assert result.exit_code == 0
+        project_dir = tmp_project_dir / "my-project"
+        assert (project_dir / "src" / "my_project" / "main.py").is_file()
+        pyproject = (project_dir / "pyproject.toml").read_text()
+        assert 'name = "my_project"' in pyproject
+
+    def test_spaced_name_is_rejected(self, tmp_project_dir: Path):
+        result = runner.invoke(app, ["new", "my project", "--python", "3.14", "-y"])
         assert result.exit_code == 1
 
-    def test_invalid_name_has_spaces(self, tmp_project_dir: Path):
-        result = runner.invoke(app, ["new", "my project", "--python", "3.14", "-y"])
+    def test_name_with_slash_is_rejected(self, tmp_project_dir: Path):
+        result = runner.invoke(app, ["new", "foo/bar", "--python", "3.14", "-y"])
         assert result.exit_code == 1
 
     def test_python_keyword_rejected(self, tmp_project_dir: Path):
@@ -105,6 +114,35 @@ class TestProjectNameValidation:
         result = runner.invoke(app, ["new", "--python", "3.14", "-y"])
         assert result.exit_code == 0
         assert (tmp_project_dir / "myproject").is_dir()
+
+
+class TestNameNormalization:
+    def test_capitalized_name_lowercases_package(self, tmp_project_dir: Path):
+        result = runner.invoke(app, ["new", "Elixir", "--python", "3.14", "-y"])
+        assert result.exit_code == 0
+        project_dir = tmp_project_dir / "Elixir"
+        assert project_dir.is_dir()
+        assert (project_dir / "src" / "elixir" / "main.py").is_file()
+        pyproject = (project_dir / "pyproject.toml").read_text()
+        assert 'name = "elixir"' in pyproject
+        devcontainer = (project_dir / ".devcontainer" / "devcontainer.json").read_text()
+        assert '"workspaceFolder": "/workspaces/Elixir"' in devcontainer
+
+    def test_mixed_hyphen_and_capitals_name(self, tmp_project_dir: Path):
+        result = runner.invoke(app, ["new", "My-Repo", "--python", "3.14", "-y"])
+        assert result.exit_code == 0
+        project_dir = tmp_project_dir / "My-Repo"
+        assert (project_dir / "src" / "my_repo" / "main.py").is_file()
+        devcontainer = (project_dir / ".devcontainer" / "devcontainer.json").read_text()
+        assert '"workspaceFolder": "/workspaces/My-Repo"' in devcontainer
+
+    def test_period_in_name_is_normalized(self, tmp_project_dir: Path):
+        result = runner.invoke(app, ["new", "repo.name", "--python", "3.14", "-y"])
+        assert result.exit_code == 0
+        project_dir = tmp_project_dir / "repo.name"
+        assert (project_dir / "src" / "repo_name" / "main.py").is_file()
+        compose = (project_dir / ".devcontainer" / "docker-compose.yml").read_text()
+        assert "/workspaces/repo.name" in compose
 
 
 class TestPythonVersionValidation:
@@ -172,6 +210,44 @@ class TestScaffoldIntoCwd:
         assert '"workspaceFolder": "/workspaces/test-proj"' in devcontainer
         compose = (hyphen_dir / ".devcontainer" / "docker-compose.yml").read_text()
         assert "/workspaces/test-proj" in compose
+
+    def test_new_dot_capitalized_directory_normalizes_package(
+        self, tmp_project_dir: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        capital_dir = tmp_project_dir / "Elixir"
+        capital_dir.mkdir()
+        monkeypatch.chdir(capital_dir)
+        result = runner.invoke(app, ["new", ".", "--python", "3.14", "-y"])
+        assert result.exit_code == 0
+        assert (capital_dir / "src" / "elixir" / "main.py").is_file()
+        pyproject = (capital_dir / "pyproject.toml").read_text()
+        assert 'name = "elixir"' in pyproject
+        devcontainer = (capital_dir / ".devcontainer" / "devcontainer.json").read_text()
+        assert '"workspaceFolder": "/workspaces/Elixir"' in devcontainer
+
+    def test_new_dot_canonical_directory_no_change(
+        self, tmp_project_dir: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        canonical_dir = tmp_project_dir / "test_proj"
+        canonical_dir.mkdir()
+        monkeypatch.chdir(canonical_dir)
+        result = runner.invoke(app, ["new", ".", "--python", "3.14", "-y"])
+        assert result.exit_code == 0
+        assert (canonical_dir / "src" / "test_proj" / "main.py").is_file()
+        devcontainer = (
+            canonical_dir / ".devcontainer" / "devcontainer.json"
+        ).read_text()
+        assert '"workspaceFolder": "/workspaces/test_proj"' in devcontainer
+
+    def test_new_dot_spaced_directory_is_rejected(
+        self, tmp_project_dir: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        spaced_dir = tmp_project_dir / "Test Proj"
+        spaced_dir.mkdir()
+        monkeypatch.chdir(spaced_dir)
+        result = runner.invoke(app, ["new", ".", "--python", "3.14", "-y"])
+        assert result.exit_code == 1
+        assert not (spaced_dir / "src").exists()
 
 
 class TestExistingDirectory:
