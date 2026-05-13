@@ -25,6 +25,7 @@ RECOMMENDED_VSCODE_EXTENSIONS: list[str] = [
     "usernamehw.errorlens",
     "christian-kohler.path-intellisense",
     "gruntfuggly.todo-tree",
+    "rangav.vscode-thunder-client",
     # Git
     "eamodio.gitlens",
     "mhutchie.git-graph",
