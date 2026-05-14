@@ -7,18 +7,18 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from devstart.config import ProjectConfig
+from devstart.generators.project import generate_project
 
 if TYPE_CHECKING:
     from pathlib import Path
 
-from devstart.generators.project import generate_project
+    from devstart.config import ProjectConfig
 
 
 class TestDirectoryStructure:
     def test_project_structure(
         self, tmp_project_dir: Path, default_config: ProjectConfig
-    ):
+    ) -> None:
         generate_project(default_config)
         root = tmp_project_dir / "testproject"
 
@@ -68,7 +68,7 @@ class TestDirectoryStructure:
 class TestTemplateRendering:
     def test_pyproject_contains_project_name(
         self, tmp_project_dir: Path, default_config: ProjectConfig
-    ):
+    ) -> None:
         generate_project(default_config)
         root = tmp_project_dir / "testproject"
         content = (root / "pyproject.toml").read_text()
@@ -76,7 +76,7 @@ class TestTemplateRendering:
 
     def test_pyproject_contains_description(
         self, tmp_project_dir: Path, default_config: ProjectConfig
-    ):
+    ) -> None:
         generate_project(default_config)
         root = tmp_project_dir / "testproject"
         content = (root / "pyproject.toml").read_text()
@@ -84,7 +84,7 @@ class TestTemplateRendering:
 
     def test_pyproject_contains_author(
         self, tmp_project_dir: Path, default_config: ProjectConfig
-    ):
+    ) -> None:
         generate_project(default_config)
         root = tmp_project_dir / "testproject"
         content = (root / "pyproject.toml").read_text()
@@ -92,7 +92,7 @@ class TestTemplateRendering:
 
     def test_pyproject_contains_python_version(
         self, tmp_project_dir: Path, default_config: ProjectConfig
-    ):
+    ) -> None:
         generate_project(default_config)
         root = tmp_project_dir / "testproject"
         content = (root / "pyproject.toml").read_text()
@@ -100,7 +100,7 @@ class TestTemplateRendering:
 
     def test_pyproject_ruff_config(
         self, tmp_project_dir: Path, default_config: ProjectConfig
-    ):
+    ) -> None:
         generate_project(default_config)
         root = tmp_project_dir / "testproject"
         content = (root / "pyproject.toml").read_text()
@@ -111,7 +111,7 @@ class TestTemplateRendering:
 
     def test_pyproject_mypy_strict(
         self, tmp_project_dir: Path, default_config: ProjectConfig
-    ):
+    ) -> None:
         generate_project(default_config)
         root = tmp_project_dir / "testproject"
         content = (root / "pyproject.toml").read_text()
@@ -120,7 +120,7 @@ class TestTemplateRendering:
 
     def test_pyproject_pytest_config(
         self, tmp_project_dir: Path, default_config: ProjectConfig
-    ):
+    ) -> None:
         generate_project(default_config)
         root = tmp_project_dir / "testproject"
         content = (root / "pyproject.toml").read_text()
@@ -130,7 +130,7 @@ class TestTemplateRendering:
 
     def test_pyproject_contains_rich_dependency(
         self, tmp_project_dir: Path, default_config: ProjectConfig
-    ):
+    ) -> None:
         generate_project(default_config)
         root = tmp_project_dir / "testproject"
         content = (root / "pyproject.toml").read_text()
@@ -138,7 +138,7 @@ class TestTemplateRendering:
 
     def test_pyproject_contains_precommit_dep(
         self, tmp_project_dir: Path, default_config: ProjectConfig
-    ):
+    ) -> None:
         generate_project(default_config)
         root = tmp_project_dir / "testproject"
         content = (root / "pyproject.toml").read_text()
@@ -146,7 +146,7 @@ class TestTemplateRendering:
 
     def test_readme_contains_project_name(
         self, tmp_project_dir: Path, default_config: ProjectConfig
-    ):
+    ) -> None:
         generate_project(default_config)
         root = tmp_project_dir / "testproject"
         content = (root / "README.md").read_text()
@@ -154,7 +154,7 @@ class TestTemplateRendering:
 
     def test_readme_docker_section(
         self, tmp_project_dir: Path, default_config: ProjectConfig
-    ):
+    ) -> None:
         generate_project(default_config)
         root = tmp_project_dir / "testproject"
         content = (root / "README.md").read_text()
@@ -162,7 +162,7 @@ class TestTemplateRendering:
 
     def test_readme_diagrams_section(
         self, tmp_project_dir: Path, default_config: ProjectConfig
-    ):
+    ) -> None:
         generate_project(default_config)
         root = tmp_project_dir / "testproject"
         content = (root / "README.md").read_text()
@@ -170,7 +170,7 @@ class TestTemplateRendering:
 
     def test_readme_release_section(
         self, tmp_project_dir: Path, default_config: ProjectConfig
-    ):
+    ) -> None:
         generate_project(default_config)
         root = tmp_project_dir / "testproject"
         content = (root / "README.md").read_text()
@@ -179,7 +179,7 @@ class TestTemplateRendering:
 
     def test_readme_docker_commands(
         self, tmp_project_dir: Path, default_config: ProjectConfig
-    ):
+    ) -> None:
         generate_project(default_config)
         root = tmp_project_dir / "testproject"
         content = (root / "README.md").read_text()
@@ -189,7 +189,7 @@ class TestTemplateRendering:
 
     def test_vscode_launch_json(
         self, tmp_project_dir: Path, default_config: ProjectConfig
-    ):
+    ) -> None:
         generate_project(default_config)
         root = tmp_project_dir / "testproject"
         content = (root / ".vscode" / "launch.json").read_text()
@@ -200,7 +200,7 @@ class TestTemplateRendering:
 
     def test_ci_uses_precommit_action(
         self, tmp_project_dir: Path, default_config: ProjectConfig
-    ):
+    ) -> None:
         generate_project(default_config)
         root = tmp_project_dir / "testproject"
         content = (root / ".github" / "workflows" / "ci.yml").read_text()
@@ -208,7 +208,7 @@ class TestTemplateRendering:
 
     def test_precommit_hooks(
         self, tmp_project_dir: Path, default_config: ProjectConfig
-    ):
+    ) -> None:
         generate_project(default_config)
         root = tmp_project_dir / "testproject"
         content = (root / ".pre-commit-config.yaml").read_text()
@@ -223,7 +223,7 @@ class TestTemplateRendering:
 
     def test_precommit_mypy_local_hook(
         self, tmp_project_dir: Path, default_config: ProjectConfig
-    ):
+    ) -> None:
         generate_project(default_config)
         root = tmp_project_dir / "testproject"
         content = (root / ".pre-commit-config.yaml").read_text()
@@ -234,7 +234,7 @@ class TestTemplateRendering:
 
     def test_precommit_pytest_local_hook(
         self, tmp_project_dir: Path, default_config: ProjectConfig
-    ):
+    ) -> None:
         generate_project(default_config)
         root = tmp_project_dir / "testproject"
         content = (root / ".pre-commit-config.yaml").read_text()
@@ -246,7 +246,7 @@ class TestTemplateRendering:
 
     def test_different_python_version(
         self, tmp_project_dir: Path, default_config: ProjectConfig
-    ):
+    ) -> None:
         config = replace(
             default_config, python_version="3.13", python_version_full="3.13.5"
         )
@@ -258,7 +258,7 @@ class TestTemplateRendering:
 
     def test_makefile_targets(
         self, tmp_project_dir: Path, default_config: ProjectConfig
-    ):
+    ) -> None:
         generate_project(default_config)
         root = tmp_project_dir / "testproject"
         content = (root / "Makefile").read_text()
@@ -275,7 +275,7 @@ class TestTemplateRendering:
 
     def test_makefile_docker_targets(
         self, tmp_project_dir: Path, default_config: ProjectConfig
-    ):
+    ) -> None:
         generate_project(default_config)
         root = tmp_project_dir / "testproject"
         content = (root / "Makefile").read_text()
@@ -289,7 +289,7 @@ class TestTemplateRendering:
 
     def test_makefile_diagrams_targets(
         self, tmp_project_dir: Path, default_config: ProjectConfig
-    ):
+    ) -> None:
         generate_project(default_config)
         root = tmp_project_dir / "testproject"
         content = (root / "Makefile").read_text()
@@ -299,7 +299,7 @@ class TestTemplateRendering:
 
     def test_makefile_release_targets(
         self, tmp_project_dir: Path, default_config: ProjectConfig
-    ):
+    ) -> None:
         generate_project(default_config)
         root = tmp_project_dir / "testproject"
         content = (root / "Makefile").read_text()
@@ -313,7 +313,7 @@ class TestScaffoldIntoCwd:
         tmp_project_dir: Path,
         default_config: ProjectConfig,
         monkeypatch: pytest.MonkeyPatch,
-    ):
+    ) -> None:
         empty_dir = tmp_project_dir / "workdir"
         empty_dir.mkdir()
         monkeypatch.chdir(empty_dir)
@@ -324,7 +324,7 @@ class TestScaffoldIntoCwd:
 
     def test_use_cwd_non_empty_raises(
         self, tmp_project_dir: Path, default_config: ProjectConfig
-    ):
+    ) -> None:
         (tmp_project_dir / "somefile.txt").write_text("hello")
         config = replace(default_config, should_use_cwd=True)
         with pytest.raises(FileExistsError):
@@ -334,7 +334,7 @@ class TestScaffoldIntoCwd:
 class TestGeneratedFileContent:
     def test_pyproject_has_debugpy_dev_dependency(
         self, tmp_project_dir: Path, default_config: ProjectConfig
-    ):
+    ) -> None:
         generate_project(default_config)
         root = tmp_project_dir / "testproject"
         content = (root / "pyproject.toml").read_text()
@@ -342,7 +342,7 @@ class TestGeneratedFileContent:
 
     def test_vscode_settings_content(
         self, tmp_project_dir: Path, default_config: ProjectConfig
-    ):
+    ) -> None:
         generate_project(default_config)
         root = tmp_project_dir / "testproject"
         content = (root / ".vscode" / "settings.json").read_text()
@@ -357,7 +357,7 @@ class TestGeneratedFileContent:
 
     def test_devcontainer_uses_recommended_extensions(
         self, tmp_project_dir: Path, default_config: ProjectConfig
-    ):
+    ) -> None:
         import json
         import re
 
@@ -376,7 +376,7 @@ class TestGeneratedFileContent:
 
     def test_devcontainer_extensions(
         self, tmp_project_dir: Path, default_config: ProjectConfig
-    ):
+    ) -> None:
         generate_project(default_config)
         root = tmp_project_dir / "testproject"
         content = (root / ".devcontainer" / "devcontainer.json").read_text()
@@ -397,7 +397,7 @@ class TestGeneratedFileContent:
 
     def test_devcontainer_docker_compose(
         self, tmp_project_dir: Path, default_config: ProjectConfig
-    ):
+    ) -> None:
         generate_project(default_config)
         root = tmp_project_dir / "testproject"
         content = (root / ".devcontainer" / "devcontainer.json").read_text()
@@ -406,7 +406,7 @@ class TestGeneratedFileContent:
 
     def test_devcontainer_docker_in_docker(
         self, tmp_project_dir: Path, default_config: ProjectConfig
-    ):
+    ) -> None:
         generate_project(default_config)
         root = tmp_project_dir / "testproject"
         content = (root / ".devcontainer" / "devcontainer.json").read_text()
@@ -415,7 +415,7 @@ class TestGeneratedFileContent:
 
     def test_class_diagram_puml_content(
         self, tmp_project_dir: Path, default_config: ProjectConfig
-    ):
+    ) -> None:
         generate_project(default_config)
         root = tmp_project_dir / "testproject"
         content = (root / "docs" / "diagrams" / "class_diagram.puml").read_text()
@@ -428,7 +428,7 @@ class TestGeneratedFileContent:
 
     def test_dockerfile_content(
         self, tmp_project_dir: Path, default_config: ProjectConfig
-    ):
+    ) -> None:
         generate_project(default_config)
         root = tmp_project_dir / "testproject"
         content = (root / "docker" / "Dockerfile").read_text()
@@ -440,14 +440,14 @@ class TestGeneratedFileContent:
 
     def test_python_version_file_uses_patch(
         self, tmp_project_dir: Path, default_config: ProjectConfig
-    ):
+    ) -> None:
         generate_project(default_config)
         root = tmp_project_dir / "testproject"
         assert (root / ".python-version").read_text().strip() == "3.14.2"
 
     def test_docker_compose_prod_has_app_service(
         self, tmp_project_dir: Path, default_config: ProjectConfig
-    ):
+    ) -> None:
         generate_project(default_config)
         root = tmp_project_dir / "testproject"
         content = (root / "docker" / "docker-compose.prod.yml").read_text()
@@ -456,14 +456,14 @@ class TestGeneratedFileContent:
 
     def test_env_example_generated(
         self, tmp_project_dir: Path, default_config: ProjectConfig
-    ):
+    ) -> None:
         generate_project(default_config)
         root = tmp_project_dir / "testproject"
         assert (root / ".env.example").is_file()
 
     def test_gitignore_diagrams_entries(
         self, tmp_project_dir: Path, default_config: ProjectConfig
-    ):
+    ) -> None:
         generate_project(default_config)
         root = tmp_project_dir / "testproject"
         content = (root / ".gitignore").read_text()
@@ -472,7 +472,7 @@ class TestGeneratedFileContent:
 
     def test_pyproject_uses_dynamic_version(
         self, tmp_project_dir: Path, default_config: ProjectConfig
-    ):
+    ) -> None:
         generate_project(default_config)
         root = tmp_project_dir / "testproject"
         content = (root / "pyproject.toml").read_text()
@@ -480,7 +480,7 @@ class TestGeneratedFileContent:
 
     def test_pyproject_has_hatch_version_config(
         self, tmp_project_dir: Path, default_config: ProjectConfig
-    ):
+    ) -> None:
         generate_project(default_config)
         root = tmp_project_dir / "testproject"
         content = (root / "pyproject.toml").read_text()
@@ -489,7 +489,7 @@ class TestGeneratedFileContent:
 
     def test_init_exports_version(
         self, tmp_project_dir: Path, default_config: ProjectConfig
-    ):
+    ) -> None:
         generate_project(default_config)
         root = tmp_project_dir / "testproject"
         content = (root / "src" / "testproject" / "__init__.py").read_text()
@@ -497,7 +497,7 @@ class TestGeneratedFileContent:
 
     def test_init_exports_app_name(
         self, tmp_project_dir: Path, default_config: ProjectConfig
-    ):
+    ) -> None:
         generate_project(default_config)
         root = tmp_project_dir / "testproject"
         content = (root / "src" / "testproject" / "__init__.py").read_text()
@@ -507,7 +507,7 @@ class TestGeneratedFileContent:
 class TestGeneratedFilesParseable:
     def test_pyproject_is_valid_toml(
         self, tmp_project_dir: Path, default_config: ProjectConfig
-    ):
+    ) -> None:
         generate_project(default_config)
         root = tmp_project_dir / "testproject"
         content = (root / "pyproject.toml").read_bytes()
@@ -516,7 +516,7 @@ class TestGeneratedFilesParseable:
 
     def test_launch_json_is_valid_json(
         self, tmp_project_dir: Path, default_config: ProjectConfig
-    ):
+    ) -> None:
         generate_project(default_config)
         root = tmp_project_dir / "testproject"
         content = (root / ".vscode" / "launch.json").read_text()
@@ -525,7 +525,7 @@ class TestGeneratedFilesParseable:
 
     def test_pyproject_dynamic_version_valid_toml(
         self, tmp_project_dir: Path, default_config: ProjectConfig
-    ):
+    ) -> None:
         generate_project(default_config)
         root = tmp_project_dir / "testproject"
         raw = (root / "pyproject.toml").read_bytes()
@@ -539,7 +539,7 @@ class TestGeneratedFilesParseable:
 class TestTomlEscaping:
     def test_description_with_quotes_produces_valid_toml(
         self, tmp_project_dir: Path, default_config: ProjectConfig
-    ):
+    ) -> None:
         config = replace(default_config, description='A "cool" project')
         generate_project(config)
         root = tmp_project_dir / "testproject"
@@ -549,7 +549,7 @@ class TestTomlEscaping:
 
     def test_author_with_quotes_produces_valid_toml(
         self, tmp_project_dir: Path, default_config: ProjectConfig
-    ):
+    ) -> None:
         config = replace(default_config, author='O\'Brien "Bob"')
         generate_project(config)
         root = tmp_project_dir / "testproject"
@@ -561,7 +561,7 @@ class TestTomlEscaping:
 class TestEdgeCases:
     def test_existing_directory_raises(
         self, tmp_project_dir: Path, default_config: ProjectConfig
-    ):
+    ) -> None:
         (tmp_project_dir / "testproject").mkdir()
         with pytest.raises(FileExistsError):
             generate_project(default_config)
