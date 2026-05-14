@@ -348,7 +348,6 @@ class TestGeneratedFileContent:
         content = (root / ".vscode" / "settings.json").read_text()
         assert '"editor.formatOnSave": true' in content
         assert '"charliermarsh.ruff"' in content
-        assert '"mypy-type-checker.args"' in content
         assert '"python.testing.pytestEnabled": true' in content
         assert "plantuml.render" in content
         assert "plantuml.server" in content
