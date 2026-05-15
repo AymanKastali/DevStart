@@ -7,6 +7,12 @@
   "workspaceFolder": "/workspaces/devstart",
   "remoteUser": "vscode",
   "updateRemoteUserUID": true,
+  "containerEnv": {
+    "UV_PROJECT_ENVIRONMENT": "/workspaces/devstart/.venv"
+  },
+  "mounts": [
+    "source=uv-cache,target=/root/.cache/uv,type=volume"
+  ],
   "features": {
     "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
       "moby": false
@@ -17,7 +23,15 @@
   "customizations": {
     "vscode": {
       "settings": {
-        "python.terminal.useEnvFile": true
+        "python.terminal.useEnvFile": true,
+        "python.terminal.activateEnvInSelectedTerminal": true,
+        "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+        "ruff.interpreter": [
+          "${workspaceFolder}/.venv/bin/python"
+        ],
+        "mypy-type-checker.interpreter": [
+          "${workspaceFolder}/.venv/bin/python"
+        ]
       },
       "extensions": [
         "ms-python.python",
